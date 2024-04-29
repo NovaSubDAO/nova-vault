@@ -1,67 +1,26 @@
-## Foundry
+# Nova vault
+
+## introduction
+
+This repository contains smart contract code of Nova vault.
+Its goal is to allow stablecoin holders to receive DSR yield.
+Its implementation is generic to support several stablecoins as inputs,
+and several AMM to swap sDAI vs stablecoin.
+
+Currently, we support:
+- USDC as stablecoin
+- Velodrome as AMM
+- Optimism as chain
 
 ## development
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
 
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+run the following command to install git hooks to your local repo:
+```bash
+./setup.sh
 ```
 
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+## tests
+```bash
+export OPTIMISM_ALCHEMY_KEY=
+forge test --fork-url optimism -vvv
 ```
