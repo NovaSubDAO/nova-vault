@@ -23,14 +23,14 @@ contract NovaVaultTest is Test {
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
         if (veloToken0 == sDAI) {
-            underlyingAddress = veloToken1;
+            underlyingAddress = veloToken1; // Usdt
         } else if (veloToken1 == sDAI) {
-            underlyingAddress = veloToken0;
+            underlyingAddress = veloToken0; // Usdt
         } else {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        underlying = ERC20(underlyingAddress);
+        underlying = ERC20(underlyingAddress); // Usdt
 
         vault = new NovaVault(
             underlying,
@@ -43,21 +43,21 @@ contract NovaVaultTest is Test {
 
 
     function testSingleDepositWithdraw() public {
-        uint256 aliceUnderlyingAmount = 100 * 1e6;
+        uint256 aliceUnderlyingAmount = 100 * 10e9; // 100,000,000,000
 
         address alice = address(0xABCD);
-
         vm.prank(underlyingWhale);
-        underlying.transfer(alice, aliceUnderlyingAmount);
+        underlying.transfer(alice, aliceUnderlyingAmount); // Alice's now Balance = 100,000,000,000
 
         vm.prank(alice);
         underlying.approve(address(vault), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
+        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount); // Vault allowance to spend from Alice's Balance = 100,000,000,000
 
-        uint256 alicePreDepositBal = underlying.balanceOf(alice);
+        uint256 alicePreDepositBal = underlying.balanceOf(alice); // 100,000,000,000
 
         vm.prank(alice);
-        uint256 aliceShareAmount = vault.deposit(aliceUnderlyingAmount, alice);
+        uint256 aliceShareAmount = vault.deposit(aliceUnderlyingAmount, alice); // Alice depositing 100,000,000,000 into the Vault
+                                                                                // Now Vault's Balance = 100,000,000,000
 
         // Expect exchange rate to be 1:1 on initial deposit.
         assertEq(aliceUnderlyingAmount, aliceShareAmount);
@@ -68,9 +68,16 @@ contract NovaVaultTest is Test {
         assertEq(vault.balanceOf(alice), aliceShareAmount);
         assertEq(vault.convertToAssets(vault.balanceOf(alice)), aliceUnderlyingAmount);
         assertEq(underlying.balanceOf(alice), alicePreDepositBal - aliceUnderlyingAmount);
-
+        
+        console.log("Alice balance on Underlying: ", underlying.balanceOf(alice));
+        console.log("Alice balance on Vault: ", vault.balanceOf(alice));
+        console.log("aliceUnderlyingAmount: ", aliceUnderlyingAmount);
+        console.log("Vault Total Asset before withdraw: ",vault.totalAssets());
+       
         vm.prank(alice);
-        vault.withdraw(aliceUnderlyingAmount, alice, alice);
+        vault.withdraw(700000000000, alice, alice); // 700000000000 is the biggest value that can be withdrawn
+        console.log("Alice balance on Vault: ", vault.balanceOf(alice));
+        console.log("Vault Total Asset after withdraw: ",vault.totalAssets());
 
         // assertEq(vault.totalAssets(), 0);
         // assertEq(vault.balanceOf(alice), 0);
