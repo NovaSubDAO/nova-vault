@@ -43,8 +43,8 @@ contract NovaVaultTest is Test {
 
 
     function testSingleDepositWithdraw() public {
-        uint256 aliceUnderlyingAmount = 100 * 1e10;
-        uint256 withdrawValue = 7e11;
+        uint256 aliceUnderlyingAmount = 1_000_000 * 1e6;
+        uint256 withdrawValue = 7_000 * 1e6;
 
         address alice = address(0xABCD);
         vm.prank(underlyingWhale);
@@ -84,7 +84,7 @@ contract NovaVaultTest is Test {
         assertEq(vault.convertToAssets(vault.balanceOf(alice)), aliceUnderlyingAmount - withdrawValue);
         assertEq(underlying.balanceOf(alice), withdrawValue);
         
-        // assertEq(vault.totalAssets(), 0);
+        assertEq(vault.totalAssets(), 0);
         // assertEq(vault.balanceOf(alice), 0);
         // assertEq(vault.convertToAssets(vault.balanceOf(alice)), 0);
         // assertEq(underlying.balanceOf(alice), alicePreDepositBal);
