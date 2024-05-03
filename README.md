@@ -22,5 +22,6 @@ run the following command to install git hooks to your local repo:
 ## tests
 ```bash
 export OPTIMISM_ALCHEMY_KEY=
-forge test --fork-url optimism -vvv
+export FORK_BLOCK_NUMBER=
+forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER
 ```
