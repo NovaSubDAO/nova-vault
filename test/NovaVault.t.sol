@@ -43,12 +43,11 @@ contract NovaVaultTest is Test {
 
 
     function testSingleDepositWithdraw() public {
-        uint256 aliceUnderlyingAmount = 100 * 1e6;
+        uint256 aliceUnderlyingAmount = 1_000 * 1e6;
 
         address alice = address(0xABCD);
-
         vm.prank(underlyingWhale);
-        underlying.transfer(alice, aliceUnderlyingAmount);
+        underlying.transfer(alice, aliceUnderlyingAmount); 
 
         vm.prank(alice);
         underlying.approve(address(vault), aliceUnderlyingAmount);
@@ -57,7 +56,7 @@ contract NovaVaultTest is Test {
         uint256 alicePreDepositBal = underlying.balanceOf(alice);
 
         vm.prank(alice);
-        uint256 aliceShareAmount = vault.deposit(aliceUnderlyingAmount, alice);
+        uint256 aliceShareAmount = vault.deposit(aliceUnderlyingAmount, alice); 
 
         // Expect exchange rate to be 1:1 on initial deposit.
         assertEq(aliceUnderlyingAmount, aliceShareAmount);
@@ -68,10 +67,24 @@ contract NovaVaultTest is Test {
         assertEq(vault.balanceOf(alice), aliceShareAmount);
         assertEq(vault.convertToAssets(vault.balanceOf(alice)), aliceUnderlyingAmount);
         assertEq(underlying.balanceOf(alice), alicePreDepositBal - aliceUnderlyingAmount);
+        
+        console.log("Alice balance on Underlying before withdraw: ", underlying.balanceOf(alice));
+        console.log("Alice balance on Vault before withdraw: ", vault.balanceOf(alice));
+        console.log("aliceUnderlyingAmount: ", aliceUnderlyingAmount);
+        console.log("Vault Total Asset before withdraw: ",vault.totalAssets());
+       
+        uint256 withdrawValue = (50 * vault.balanceOf(alice)) / 100;
 
         vm.prank(alice);
-        vault.withdraw(aliceUnderlyingAmount, alice, alice);
+        vault.withdraw(withdrawValue, alice, alice);
+        console.log("Alice balance on vault after withdraw: ", vault.balanceOf(alice));
+        console.log("Vault Total Assets after withdraw: ", vault.totalAssets());
 
+        assertEq(vault.totalSupply(), aliceShareAmount - withdrawValue);
+        assertEq(vault.balanceOf(alice), aliceShareAmount - withdrawValue);
+        assertEq(vault.convertToAssets(vault.balanceOf(alice)), aliceUnderlyingAmount - withdrawValue);
+        assertEq(underlying.balanceOf(alice), withdrawValue);
+        
         // assertEq(vault.totalAssets(), 0);
         // assertEq(vault.balanceOf(alice), 0);
         // assertEq(vault.convertToAssets(vault.balanceOf(alice)), 0);

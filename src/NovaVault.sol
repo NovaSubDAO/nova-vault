@@ -61,10 +61,12 @@ contract NovaVault is ERC4626 {
         bytes calldata
     ) external {
         require(msg.sender == address(veloPool), "Caller is not VelodromePool");
-        if (amount0Delta > 0)
+        if (amount0Delta > 0) {
             ERC20(veloToken0).transfer(msg.sender, uint256(amount0Delta));
-        if (amount1Delta > 0)
+        }
+        if (amount1Delta > 0) {
             ERC20(veloToken1).transfer(msg.sender, uint256(amount1Delta));
+        }
     }
 
     function _swap(
