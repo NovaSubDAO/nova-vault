@@ -4,6 +4,7 @@ on: workflow_dispatch
 
 env:
   FOUNDRY_PROFILE: ci
+  FORK_BLOCK_NUMBER: 119560377
 
 jobs:
   check:
@@ -30,5 +31,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test --fork-url optimism -vvv
+          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER
         id: test
