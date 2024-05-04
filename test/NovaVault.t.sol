@@ -73,7 +73,7 @@ contract NovaVaultTest is Test {
         console.log("Alice balance on Underlying before withdraw: ", underlying.balanceOf(alice));
         console.log("Alice balance on Vault before withdraw: ", vault.balanceOf(alice));
         console.log("aliceUnderlyingAmount: ", aliceUnderlyingAmount);
-        console.log("Vault Total Asset before withdraw: ",vault.totalAssets());
+        console.log("Vault Total Assets before withdraw: ",vault.totalAssets());
        
         uint256 withdrawValue = (50 * vault.balanceOf(alice)) / 100;
 
@@ -94,9 +94,8 @@ contract NovaVaultTest is Test {
     }
 
     function testTwoDepositsSingleWithdraw() public {
-        uint256 aliceUnderlyingAmount = 50 * 1e10;
-        uint256 bobUnderlyingAmount = 50 * 1e10;
-        uint256 withdrawValue = 7e10;
+        uint256 aliceUnderlyingAmount = 1_000 * 1e6;
+        uint256 bobUnderlyingAmount = 1_200 * 1e6;
 
         address alice = address(0xABCD);
         address bob = address(0xBCDE);
@@ -150,11 +149,13 @@ contract NovaVaultTest is Test {
         console.log("bob balance on Vault: ", vault.balanceOf(bob));
         console.log("bobUnderlyingAmount: ", bobUnderlyingAmount);
 
-        console.log("Vault Total Asset before withdraw: ",vault.totalAssets());
+        console.log("Vault Total Assets before withdraw: ",vault.totalAssets());
+
+        uint256 withdrawValue = (50 * vault.balanceOf(alice)) / 100;
        
         vm.prank(alice);
         vault.withdraw(withdrawValue, alice, alice);
-        console.log("Vault Total Asset after withdraw: ",vault.totalAssets());
+        console.log("Vault Total Assets after withdraw: ",vault.totalAssets());
 
         assertEq(vault.totalSupply(), aliceShareAmount + bobShareAmount - withdrawValue);
         assertEq(vault.balanceOf(alice), aliceShareAmount - withdrawValue);
