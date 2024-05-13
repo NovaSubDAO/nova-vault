@@ -108,7 +108,7 @@ contract NovaAdapter is ERC20 {
     ) internal {
         (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
         uint160 num = isStableFirst ? 95 : 105;
-        int8 sign = fromStableTosDai ? int8(1) : int8(1);
+        int8 sign = fromStableTosDai ? int8(1) : int8(-1);
         veloPool.swap(
             address(this),
             isStableFirst,
