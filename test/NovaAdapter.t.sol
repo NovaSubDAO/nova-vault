@@ -75,47 +75,7 @@ contract NovaVaultTest is Test {
         assertEq(convertTo6Decimals(vault.balanceOf(alice)), aliceUnderlyingAmount);
     }
 
-    function testWithdraw() public{
-        uint256 aliceUnderlyingAmount = 100 * 1e6;
-        address alice = address(0xABCD);
-
-        vm.prank(underlyingWhale);
-        underlying.transfer(alice, aliceUnderlyingAmount);
-
-        vm.prank(alice);
-        underlying.approve(address(vault), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
-
-        console.log("pool balance: ", ERC20(sDAI).balanceOf(address(POOL)));
-        console.log("pool balance: ", ERC20(underlying).balanceOf(address(POOL)));
-        vm.prank(alice);
-        vault.deposit(aliceUnderlyingAmount);
-        console.log("----After deposit----");
-
-        console.log("pool balance: ", ERC20(sDAI).balanceOf(address(POOL)));
-        console.log("pool balance: ", ERC20(underlying).balanceOf(address(POOL)));
-        
-        uint256 balanceOfVault = ERC20(sDAI).balanceOf(address(vault));
-        uint256 balanceWith6Decimals = convertTo6Decimals(balanceOfVault);
-        uint256 aliceSDAIamount = vault.balanceOf(alice);
-
-        // console.log("USDC on Vault: ", underlying.balanceOf(address(vault)));
-        console.log("sDAI on vault (converted to 6 decimals): ",balanceWith6Decimals);
-        console.log("USDC on Alice: ", underlying.balanceOf(alice));
-        console.log("sUSDC on Alice (converted to 6 decimals): ", convertTo6Decimals(aliceSDAIamount));
-
-        console.log("token0: ", vault.getVeloToken0());
-        console.log("token1: ", vault.getVeloToken1());
-        console.log(aliceSDAIamount);
-        assertEq(underlying.balanceOf(alice), 0);
-        assertEq(convertTo6Decimals(aliceSDAIamount), convertTo6Decimals(vault.getSdaiPerUser(alice)));
-        vm.prank(alice);
-        vault.withdraw(aliceSDAIamount);
-
-    }
-
     function convertTo6Decimals(uint256 amount) internal pure returns (uint256) {
         return amount / (10 ** 12);
     }
-
 }

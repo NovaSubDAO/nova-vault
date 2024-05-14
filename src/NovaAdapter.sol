@@ -94,6 +94,8 @@ contract NovaAdapter is ERC20 {
         bytes calldata
     ) external {
         require(msg.sender == address(veloPool), "Caller is not VelodromePool");
+        console.log("amount0Delta: ", uint256(amount0Delta));
+        console.log("amount1Delta: ", uint256(amount1Delta));
         if (amount0Delta > 0){
             ERC20(veloToken0).transfer(msg.sender, uint256(amount0Delta));
         }
@@ -108,7 +110,7 @@ contract NovaAdapter is ERC20 {
     ) internal {
         (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
         uint160 num = isStableFirst ? 95 : 105;
-        int8 sign = fromStableTosDai ? int8(1) : int8(-1);
+        int256 sign = fromStableTosDai ? int256(1) : int256(-1);
         veloPool.swap(
             address(this),
             isStableFirst,
