@@ -6,7 +6,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {NovaAdapter} from "../src/NovaAdapter.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 
-contract NovaVaultTest is Test {
+contract NovaAdapterTest is Test {
     address public POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
     NovaAdapter public vault;
@@ -60,7 +60,7 @@ contract NovaVaultTest is Test {
         console.log("sUSDC on Alice (converted to 6 decimals): ", convertTo6Decimals(vault.balanceOf(alice)));
 
         vm.prank(alice);
-        vault.deposit(aliceUnderlyingAmount);
+        (bool success, uint256 sDAIminted) = vault.deposit(aliceUnderlyingAmount);
         console.log("----After deposit----");
        
         uint256 balanceOfVault = ERC20(sDAI).balanceOf(address(vault));
@@ -71,8 +71,10 @@ contract NovaVaultTest is Test {
         console.log("USDC on Alice: ", underlying.balanceOf(alice));
         console.log("sUSDC on Alice (converted to 6 decimals): ", convertTo6Decimals(vault.balanceOf(alice)));
 
+        assert(success);
         assertEq(underlying.balanceOf(alice), 0);
-        assertEq(convertTo6Decimals(vault.balanceOf(alice)), aliceUnderlyingAmount);
+        assertEq(vault.balanceOf(alice), sDAIminted);
+        assertEq(ERC20(sDAI).balanceOf(address(vault)), sDAIminted);
     }
 
     function convertTo6Decimals(uint256 amount) internal pure returns (uint256) {

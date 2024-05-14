@@ -7,13 +7,13 @@ import {console} from "forge-std/Test.sol";
 
 contract NovaAdapter is ERC20 {
 
-    error NovaAdapter__TransferFailed(
+    error TransferFailed(
         address sender,
         address recipient,
         uint256 amount
     );
 
-    error NovaAdapter__SharesAmountExceeded(
+    error SharesAmountExceeded(
         address sender,
         uint256 shares,
         uint256 sDAIperUser
@@ -23,13 +23,9 @@ contract NovaAdapter is ERC20 {
     address immutable veloToken0;
     address immutable veloToken1;
     address immutable sDAI;
-    uint256 private sDAIbalance = 0;
-    uint256 private assetsBalance = 0;
 
     IVelodromePool public veloPool;
     ERC20 asset;
-
-    mapping(address user => uint256 sDAI) private sDAIperUser;
 
     constructor(
         ERC20 _asset,
@@ -54,38 +50,23 @@ contract NovaAdapter is ERC20 {
         }
     }
 
-    function deposit(uint256 assets) external {
+    function deposit(uint256 assets) external returns (bool , uint256 sDaiMinted) {
         bool success = asset.transferFrom(msg.sender, address(this), assets);
         if(!success){
-            revert NovaAdapter__TransferFailed(msg.sender, address(this), assets);
+            revert TransferFailed(msg.sender, address(this), assets);
         }
 
-        _swap(int256(assets), true);
-        
-        uint256 sDAInewBalance = ERC20(sDAI).balanceOf(address(this));
-        uint256 sDAItoMint = sDAInewBalance - sDAIbalance;
+        (, int256 sDai) = _swap(int256(assets), true);
+        int256 sDaiToMint = sDai * -1;
+        _mint(msg.sender, uint256(sDaiToMint));
 
-        _mint(msg.sender, sDAItoMint);
-        sDAIperUser[msg.sender] = sDAItoMint;
-
-        sDAIbalance = sDAInewBalance;
+        return (true, uint256(sDaiToMint));
     }
 
     function withdraw(uint256 shares) external {
-        if (shares > sDAIperUser[msg.sender]) {
-            revert NovaAdapter__SharesAmountExceeded(msg.sender, shares, sDAIperUser[msg.sender]);
-        }
-
-        assetsBalance = ERC20(address(asset)).balanceOf(address(this));
-
-        _swap(int256(shares), false);
-        _burn(msg.sender, shares);
-        
-        uint256 newAssetsBalance = ERC20(address(asset)).balanceOf(address(this));
-        ERC20(address(asset)).transfer(msg.sender, newAssetsBalance - assetsBalance);
-
-        sDAIbalance -= shares;
-        sDAIperUser[msg.sender] -= shares;
+        (int256 assets, ) = _swap(int256(shares), false);
+        _burn(msg.sender, uint256(assets));
+        ERC20(address(asset)).transfer(msg.sender, uint256(assets));
     }
 
     function uniswapV3SwapCallback(
@@ -94,8 +75,7 @@ contract NovaAdapter is ERC20 {
         bytes calldata
     ) external {
         require(msg.sender == address(veloPool), "Caller is not VelodromePool");
-        console.log("amount0Delta: ", uint256(amount0Delta));
-        console.log("amount1Delta: ", uint256(amount1Delta));
+
         if (amount0Delta > 0){
             ERC20(veloToken0).transfer(msg.sender, uint256(amount0Delta));
         }
@@ -107,34 +87,19 @@ contract NovaAdapter is ERC20 {
     function _swap(
         int256 amount,
         bool fromStableTosDai
-    ) internal {
+    ) internal returns (int256, int256){
         (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
         uint160 num = isStableFirst ? 95 : 105;
         int256 sign = fromStableTosDai ? int256(1) : int256(-1);
-        veloPool.swap(
+        
+        (int256 amount0, int256 amount1) = veloPool.swap(
             address(this),
             isStableFirst,
             sign * amount,
             (num * sqrtPriceX96) / 100,
             ""
         );
-    }
 
-    function getSdaiPerUser(address user) external view returns (uint256) {
-        return sDAIperUser[user];
-    }
-
-    function convertTo18Decimals(
-        uint256 amount
-    ) internal pure returns (uint256) {
-        return amount * 10 ** 12;
-    }
-
-    function getVeloToken0() external view returns (address) {
-        return veloToken0;
-    }
-
-    function getVeloToken1() external view returns (address) {
-        return veloToken1;
+        return (amount0, amount1);
     }
 }
