@@ -3,13 +3,13 @@ pragma solidity ^0.8.13;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {Test, console} from "forge-std/Test.sol";
-import {NovaVault} from "../src/NovaVault.sol";
+import {NovaAdapter} from "../src/NovaAdapter.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 
-contract NovaVaultTest is Test {
+contract NovaAdapterTest is Test {
     address public POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
-    NovaVault public vault;
+    NovaAdapter public vault;
     IVelodromePool veloPool;
     address underlyingAddress;
     ERC20 underlying;
@@ -32,19 +32,18 @@ contract NovaVaultTest is Test {
 
         underlying = ERC20(underlyingAddress);
 
-        vault = new NovaVault(
+        vault = new NovaAdapter(
             underlying,
             POOL,
             sDAI,
-            "NovaVault",
-            "NV"
+            "NovaAdapter",
+            "NV",
+            18
         );
     }
 
-
-    function testSingleDepositWithdraw() public {
+    function testDeposit() public{
         uint256 aliceUnderlyingAmount = 100 * 1e6;
-
         address alice = address(0xABCD);
 
         vm.prank(underlyingWhale);
@@ -54,27 +53,12 @@ contract NovaVaultTest is Test {
         underlying.approve(address(vault), aliceUnderlyingAmount);
         assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
 
-        uint256 alicePreDepositBal = underlying.balanceOf(alice);
-
         vm.prank(alice);
-        uint256 aliceShareAmount = vault.deposit(aliceUnderlyingAmount, alice);
-
-        // Expect exchange rate to be 1:1 on initial deposit.
-        assertEq(aliceUnderlyingAmount, aliceShareAmount);
-        assertEq(vault.previewWithdraw(aliceShareAmount), aliceUnderlyingAmount);
-        assertEq(vault.previewDeposit(aliceUnderlyingAmount), aliceShareAmount);
-        assertEq(vault.totalSupply(), aliceShareAmount);
-        assertEq(vault.totalAssets(), aliceUnderlyingAmount);
-        assertEq(vault.balanceOf(alice), aliceShareAmount);
-        assertEq(vault.convertToAssets(vault.balanceOf(alice)), aliceUnderlyingAmount);
-        assertEq(underlying.balanceOf(alice), alicePreDepositBal - aliceUnderlyingAmount);
-
-        vm.prank(alice);
-        vault.withdraw(aliceUnderlyingAmount, alice, alice);
-
-        // assertEq(vault.totalAssets(), 0);
-        // assertEq(vault.balanceOf(alice), 0);
-        // assertEq(vault.convertToAssets(vault.balanceOf(alice)), 0);
-        // assertEq(underlying.balanceOf(alice), alicePreDepositBal);
+        (bool success, uint256 sDAIminted) = vault.deposit(aliceUnderlyingAmount);
+       
+        assert(success);
+        assertEq(underlying.balanceOf(alice), 0);
+        assertEq(vault.balanceOf(alice), sDAIminted);
+        assertEq(ERC20(sDAI).balanceOf(address(vault)), sDAIminted);
     }
 }
