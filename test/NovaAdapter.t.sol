@@ -53,31 +53,12 @@ contract NovaAdapterTest is Test {
         underlying.approve(address(vault), aliceUnderlyingAmount);
         assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
 
-        console.log("----Before deposit----");
-        console.log("USDC on Vault: ", underlying.balanceOf(address(vault)));
-        console.log("sDAI on vault: ", ERC20(sDAI).balanceOf(address(vault)));
-        console.log("USDC on Alice: ", underlying.balanceOf(alice));
-        console.log("sUSDC on Alice (converted to 6 decimals): ", convertTo6Decimals(vault.balanceOf(alice)));
-
         vm.prank(alice);
         (bool success, uint256 sDAIminted) = vault.deposit(aliceUnderlyingAmount);
-        console.log("----After deposit----");
        
-        uint256 balanceOfVault = ERC20(sDAI).balanceOf(address(vault));
-        uint256 balanceWith6Decimals = convertTo6Decimals(balanceOfVault);
-
-        console.log("USDC on Vault: ", underlying.balanceOf(address(vault)));
-        console.log("sDAI on vault (converted to 6 decimals): ",balanceWith6Decimals);
-        console.log("USDC on Alice: ", underlying.balanceOf(alice));
-        console.log("sUSDC on Alice (converted to 6 decimals): ", convertTo6Decimals(vault.balanceOf(alice)));
-
         assert(success);
         assertEq(underlying.balanceOf(alice), 0);
         assertEq(vault.balanceOf(alice), sDAIminted);
         assertEq(ERC20(sDAI).balanceOf(address(vault)), sDAIminted);
-    }
-
-    function convertTo6Decimals(uint256 amount) internal pure returns (uint256) {
-        return amount / (10 ** 12);
     }
 }

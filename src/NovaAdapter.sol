@@ -50,14 +50,14 @@ contract NovaAdapter is ERC20 {
         }
     }
 
-    function deposit(uint256 assets) external returns (bool , uint256 sDaiMinted) {
+    function deposit(uint256 assets) external returns (bool , uint256) {
         bool success = asset.transferFrom(msg.sender, address(this), assets);
         if(!success){
             revert TransferFailed(msg.sender, address(this), assets);
         }
 
         (, int256 sDai) = _swap(int256(assets), true);
-        int256 sDaiToMint = sDai * -1;
+        int256 sDaiToMint = -sDai;
         _mint(msg.sender, uint256(sDaiToMint));
 
         return (true, uint256(sDaiToMint));
