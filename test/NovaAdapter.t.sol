@@ -61,4 +61,31 @@ contract NovaAdapterTest is Test {
         assertEq(vault.balanceOf(alice), sDAIminted);
         assertEq(ERC20(sDAI).balanceOf(address(vault)), sDAIminted);
     }
+
+    function testWithdraw() public{
+        uint256 aliceUnderlyingAmount = 100 * 1e6;
+        address alice = address(0xABCD);
+
+        vm.prank(underlyingWhale);
+        underlying.transfer(alice, aliceUnderlyingAmount);
+
+        vm.prank(alice);
+        underlying.approve(address(vault), aliceUnderlyingAmount);
+        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
+
+        vm.prank(alice);
+        (bool success_deposit, uint256 sDAIminted) = vault.deposit(aliceUnderlyingAmount);
+        assert(success_deposit);
+        assertEq(underlying.balanceOf(alice), 0);
+        assertEq(vault.balanceOf(alice), sDAIminted);
+        assertEq(ERC20(sDAI).balanceOf(address(vault)), sDAIminted);
+
+        vm.prank(alice);
+        (bool success_withdraw, uint256 underlyingWithdrawn) = vault.withdraw(sDAIminted);
+        assert(success_withdraw);
+        assertEq(underlying.balanceOf(alice), underlyingWithdrawn);
+        assertEq(vault.balanceOf(alice), 0);
+        assertEq(ERC20(sDAI).balanceOf(address(vault)), 0);
+        assertEq(underlying.balanceOf(address(vault)), 0);
+    }
 }
