@@ -8,6 +8,7 @@ on:
 env:
   FOUNDRY_PROFILE: ci
   FORK_BLOCK_NUMBER: 119560377
+  OPTIMISM_ALCHEMY_KEY: ${{ secrets.OPTIMISM_ALCHEMY_KEY }}
 
 jobs:
   check:
@@ -34,5 +35,5 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER --match-test testWithdraw
+          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER
         id: test
