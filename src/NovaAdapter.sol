@@ -63,10 +63,14 @@ contract NovaAdapter is ERC20 {
         return (true, uint256(sDaiToMint));
     }
 
-    function withdraw(uint256 shares) external {
+    function withdraw(uint256 shares) external returns (bool, uint256) {
         (int256 assets, ) = _swap(int256(shares), false);
-        _burn(msg.sender, uint256(assets));
+        assets = -assets;
+
+        _burn(msg.sender, uint256(shares));
         ERC20(address(asset)).transfer(msg.sender, uint256(assets));
+
+        return (true, uint256(assets));
     }
 
     function uniswapV3SwapCallback(
@@ -89,12 +93,12 @@ contract NovaAdapter is ERC20 {
         bool fromStableTosDai
     ) internal returns (int256, int256){
         (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
-        uint160 num = isStableFirst ? 95 : 105;
-        int256 sign = fromStableTosDai ? int256(1) : int256(-1);
+        uint160 num = fromStableTosDai ? 95 : 105;
+        int256 sign = isStableFirst ? int256(1) : int256(-1);
         
         (int256 amount0, int256 amount1) = veloPool.swap(
             address(this),
-            isStableFirst,
+            fromStableTosDai,
             sign * amount,
             (num * sqrtPriceX96) / 100,
             ""
