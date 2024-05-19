@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {console} from "forge-std/Test.sol";
 
 abstract contract NovaAdapterBase is ERC20 {
 
@@ -10,12 +9,6 @@ abstract contract NovaAdapterBase is ERC20 {
         address sender,
         address recipient,
         uint256 amount
-    );
-
-    error SharesAmountExceeded(
-        address sender,
-        uint256 shares,
-        uint256 sDAIperUser
     );
 
     address immutable sDAI;
@@ -39,28 +32,37 @@ abstract contract NovaAdapterBase is ERC20 {
         }
 
         (, int256 sDai) = _swap(int256(assets), true);
-        int256 sDaiToMint = -sDai;
-        _mint(msg.sender, uint256(sDaiToMint));
+        uint256 sDaiToMint = uint256(-sDai);
 
-        return (true, uint256(sDaiToMint));
+        _mint(msg.sender, sDaiToMint);
+
+        return (true, sDaiToMint);
     }
 
     function withdraw(uint256 shares) external returns (bool, uint256) {
         (int256 assets, ) = _swap(int256(shares), false);
-        assets = -assets;
+        uint256 assetsToTransfer = uint256(-assets);
 
-        _burn(msg.sender, uint256(shares));
-        ERC20(address(asset)).transfer(msg.sender, uint256(assets));
+        bool success = asset.transfer(msg.sender, assetsToTransfer);
+        if(!success){
+            revert TransferFailed(msg.sender, address(this), assetsToTransfer);
+        }
 
-        return (true, uint256(assets));
+        _burn(msg.sender, shares);
+
+        return (true, assetsToTransfer);
     }
 
-    function uniswapV3SwapCallback(
-        int256 amount0Delta,
-        int256 amount1Delta,
-        bytes calldata
-    ) external virtual;
-
+    /**
+     * @notice Performs a swap operation between the stable asset and sDAI.
+     * @dev This function interacts with the pool to execute the swap.
+     * @param amount The amount to be swapped.
+     * @param fromStableTosDai A boolean indicating the direction of the swap. 
+     *                         - `true` for swapping from the stable asset to sDAI.
+     *                         - `false` for swapping from sDAI to the stable asset.
+     * @return amount0 The amount of token0 involved in the swap.
+     * @return amount1 The amount of token1 involved in the swap.
+     */
     function _swap(
         int256 amount,
         bool fromStableTosDai

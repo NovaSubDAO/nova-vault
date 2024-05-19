@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IVelodromePool} from "src/interfaces/IVelodromePool.sol";
 import {NovaAdapterBase} from "./NovaAdapterBase.sol";
-import {console} from "forge-std/Test.sol";
 
 contract NovaAdapterVelo is NovaAdapterBase {
 
@@ -17,16 +16,14 @@ contract NovaAdapterVelo is NovaAdapterBase {
     constructor(
         ERC20 _asset,
         address _sDAI,
+        address _pool,
         string memory _name,
         string memory _symbol,
-        uint8 _decimals,
-        address _pool
+        uint8 _decimals
     ) NovaAdapterBase(_asset, _sDAI, _name, _symbol, _decimals) {
         veloPool = IVelodromePool(_pool);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
-        asset = _asset;
-        sDAI = _sDAI;
 
         if ((veloToken0 == address(asset)) && (veloToken1 == sDAI)) {
             isStableFirst = true;
@@ -37,19 +34,11 @@ contract NovaAdapterVelo is NovaAdapterBase {
         }
     }
 
-    function _deposit(uint256 assets) external returns (bool , uint256) {
-        return this.deposit(assets);
-    }
-
-    function _withdraw(uint256 shares) external returns (bool, uint256) {
-        return this.withdraw(shares);
-    }
-
     function uniswapV3SwapCallback(
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata
-    ) external override {
+    ) external {
         require(msg.sender == address(veloPool), "Caller is not VelodromePool");
 
         if (amount0Delta > 0){
