@@ -50,9 +50,9 @@ contract NovaVault is INovaVault {
     }
 
     function deposit(address stable, uint256 assets) external returns (bool , bytes memory) {
-        address addapter = _novaAdapters[stable];
+        address adapter = _novaAdapters[stable];
         require(
-            addapter != address(0),
+            adapter != address(0),
             Errors.NO_ADAPTER_APPROVED
         );
         (bool success, bytes memory data) = adapter.delegatecall(
@@ -62,9 +62,9 @@ contract NovaVault is INovaVault {
     }
 
     function withdraw(address stable, uint256 shares) external returns (bool , bytes memory) {
-        address addapter = _novaAdapters[stable];
+        address adapter = _novaAdapters[stable];
         require(
-            addapter != address(0),
+            adapter != address(0),
             Errors.NO_ADAPTER_APPROVED
         );
         (bool success, bytes memory data) = adapter.delegatecall(
