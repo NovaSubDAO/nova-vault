@@ -67,4 +67,8 @@ contract NovaAdapterVelo is NovaAdapterBase {
 
         return (amount0, amount1);
     }
+
+    function getAsset() external view returns (ERC20) {
+        return asset;
+    }
 }
