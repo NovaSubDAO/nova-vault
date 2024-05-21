@@ -10,7 +10,7 @@ contract NovaVault is INovaVault {
 
     function constructor(
         address[] calldata stables,
-        uint256[] calldata novaAdapters
+        address[] calldata novaAdapters
     ) {
         _approveNovaAdapters(stables, novaAdapters);
     }
@@ -58,7 +58,7 @@ contract NovaVault is INovaVault {
         (bool success, bytes memory data) = adapter.delegatecall(
             abi.encodeWithSignature("deposit(uint256)", assets)
         );
-        return (sucess, data)
+        return (success, data)
     }
 
     function withdraw(address stable, uint256 shares) external returns (bool , bytes memory) {
@@ -70,6 +70,6 @@ contract NovaVault is INovaVault {
         (bool success, bytes memory data) = adapter.delegatecall(
             abi.encodeWithSignature("withdraw(uint256)", shares)
         );
-        return (sucess, data)
+        return (success, data)
     }
 }
