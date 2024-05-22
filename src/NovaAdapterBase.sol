@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {console} from "forge-std/console.sol";
 
 abstract contract NovaAdapterBase is ERC20 {
 
@@ -25,18 +26,18 @@ abstract contract NovaAdapterBase is ERC20 {
         sDAI = _sDAI;
     }
 
-    function deposit(uint256 assets) external returns (bool , uint256) {
-        bool success = asset.transferFrom(msg.sender, address(this), assets);
-        if(!success){
-            revert TransferFailed(msg.sender, address(this), assets);
-        }
+    function deposit(uint256 assets) external returns (uint256) {
+        // bool success = asset.transferFrom(msg.sender, address(this), assets);
+        // if(!success){
+        //     revert TransferFailed(msg.sender, address(this), assets);
+        // }
 
         (, int256 sDai) = _swap(int256(assets), true);
         uint256 sDaiToMint = uint256(-sDai);
 
         _mint(msg.sender, sDaiToMint);
 
-        return (true, sDaiToMint);
+        return sDaiToMint;
     }
 
     function withdraw(uint256 shares) external returns (bool, uint256) {

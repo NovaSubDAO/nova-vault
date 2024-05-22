@@ -59,8 +59,8 @@ contract NovaVaultTest is Test {
         underlying.transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        underlying.approve(address(adapter), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(adapter)), aliceUnderlyingAmount);
+        underlying.approve(address(vault), aliceUnderlyingAmount);
+        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
 
 
         vm.prank(alice);

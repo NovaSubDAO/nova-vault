@@ -59,6 +59,9 @@ contract NovaVault is INovaVault {
             adapter != address(0),
             Errors.NO_ADAPTER_APPROVED
         );
+        
+        ERC20(stable).transferFrom(msg.sender, adapter, assets);
+
         (bool success, bytes memory data) = adapter.delegatecall(
             abi.encodeWithSignature("deposit(uint256)", assets)
         );
