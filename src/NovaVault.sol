@@ -62,7 +62,7 @@ contract NovaVault is INovaVault {
         
         ERC20(stable).transferFrom(msg.sender, adapter, assets);
 
-        (bool success, bytes memory data) = adapter.delegatecall(
+        (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("deposit(uint256)", assets)
         );
         return (success, data);
@@ -74,7 +74,7 @@ contract NovaVault is INovaVault {
             adapter != address(0),
             Errors.NO_ADAPTER_APPROVED
         );
-        (bool success, bytes memory data) = adapter.delegatecall(
+        (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("withdraw(uint256)", shares)
         );
         return (success, data);
