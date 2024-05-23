@@ -26,18 +26,18 @@ abstract contract NovaAdapterBase is ERC20 {
         sDAI = _sDAI;
     }
 
-    function deposit(uint256 assets) external returns (uint256) {
-        // bool success = asset.transferFrom(msg.sender, address(this), assets);
-        // if(!success){
-        //     revert TransferFailed(msg.sender, address(this), assets);
-        // }
+    function deposit(uint256 assets) external returns (bool, uint256) {
+        bool success = asset.transferFrom(msg.sender, address(this), assets);
+        if(!success){
+            revert TransferFailed(msg.sender, address(this), assets);
+        }
 
         (, int256 sDai) = _swap(int256(assets), true);
         uint256 sDaiToMint = uint256(-sDai);
 
         _mint(msg.sender, sDaiToMint);
 
-        return sDaiToMint;
+        return (true, sDaiToMint);
     }
 
     function withdraw(uint256 shares) external returns (bool, uint256) {

@@ -60,7 +60,8 @@ contract NovaVault is INovaVault {
             Errors.NO_ADAPTER_APPROVED
         );
         
-        ERC20(stable).transferFrom(msg.sender, adapter, assets);
+        ERC20(stable).transferFrom(msg.sender, address(this), assets);
+        ERC20(stable).approve(adapter, assets);
 
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("deposit(uint256)", assets)
