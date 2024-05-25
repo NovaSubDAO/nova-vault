@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {console} from "forge-std/console.sol";
 
 abstract contract NovaAdapterBase is ERC20 {
 

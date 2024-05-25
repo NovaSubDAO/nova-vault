@@ -6,8 +6,6 @@ import {INovaVault} from "./interfaces/INovaVault.sol";
 import {INovaAdapterBase} from "./interfaces/INovaAdapterBase.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 
-import {console} from "forge-std/console.sol";
-
 contract NovaVault is INovaVault {
     mapping(address => address) public _novaAdapters;
 
