@@ -4,20 +4,21 @@ pragma solidity ^0.8.13;
 import {Errors} from "./libraries/Errors.sol";
 import {INovaVault} from "./interfaces/INovaVault.sol";
 import {INovaAdapterBase} from "./interfaces/INovaAdapterBase.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
 
 contract NovaVault is INovaVault {
     mapping(address => address) public _novaAdapters;
 
-    function constructor(
-        address[] calldata stables,
-        address[] calldata novaAdapters
+    constructor(
+        address[] memory stables,
+        address[] memory novaAdapters
     ) {
         _approveNovaAdapters(stables, novaAdapters);
     }
 
     function _approveNovaAdapters(
-        address[] calldata stables,
-        address[] calldata novaAdapters,
+        address[] memory stables,
+        address[] memory novaAdapters
     ) internal {
         require(
             stables.length == novaAdapters.length,
@@ -39,7 +40,8 @@ contract NovaVault is INovaVault {
             Errors.ADAPTER_ALREADY_APPROVED
         );
 
-        ERC20 underlyingAsset = INovaAdapterBase(adapter).asset();
+        ERC20 underlyingAsset = INovaAdapterBase(adapter).getAsset();
+        
         require(
             address(underlyingAsset) == stable,
             Errors.INVALID_STABLE_TO_ADAPTER_MAPPING
@@ -55,10 +57,14 @@ contract NovaVault is INovaVault {
             adapter != address(0),
             Errors.NO_ADAPTER_APPROVED
         );
-        (bool success, bytes memory data) = adapter.delegatecall(
+        
+        ERC20(stable).transferFrom(msg.sender, address(this), assets);
+        ERC20(stable).approve(adapter, assets);
+
+        (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("deposit(uint256)", assets)
         );
-        return (success, data)
+        return (success, data);
     }
 
     function withdraw(address stable, uint256 shares) external returns (bool , bytes memory) {
@@ -67,9 +73,9 @@ contract NovaVault is INovaVault {
             adapter != address(0),
             Errors.NO_ADAPTER_APPROVED
         );
-        (bool success, bytes memory data) = adapter.delegatecall(
+        (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("withdraw(uint256)", shares)
         );
-        return (success, data)
+        return (success, data);
     }
 }

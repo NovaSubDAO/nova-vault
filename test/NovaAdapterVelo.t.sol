@@ -9,7 +9,7 @@ import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 contract NovaAdapterVeloTest is Test {
     address public POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
-    NovaAdapterVelo public vault;
+    NovaAdapterVelo public adapter;
     IVelodromePool veloPool;
     address underlyingAddress;
     ERC20 underlying;
@@ -32,7 +32,7 @@ contract NovaAdapterVeloTest is Test {
 
         underlying = ERC20(underlyingAddress);
 
-        vault = new NovaAdapterVelo(
+        adapter = new NovaAdapterVelo(
             underlying,
             sDAI,
             POOL,
@@ -50,16 +50,16 @@ contract NovaAdapterVeloTest is Test {
         underlying.transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        underlying.approve(address(vault), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
+        underlying.approve(address(adapter), aliceUnderlyingAmount);
+        assertEq(underlying.allowance(alice, address(adapter)), aliceUnderlyingAmount);
 
         vm.prank(alice);
-        (bool success, uint256 sDaiMinted) = vault.deposit(aliceUnderlyingAmount);
+        (bool success, uint256 sDaiMinted) = adapter.deposit(aliceUnderlyingAmount);
        
         assert(success);
         assertEq(underlying.balanceOf(alice), 0);
-        assertEq(vault.balanceOf(alice), sDaiMinted);
-        assertEq(ERC20(sDAI).balanceOf(address(vault)), sDaiMinted);
+        assertEq(adapter.balanceOf(alice), sDaiMinted);
+        assertEq(ERC20(sDAI).balanceOf(address(adapter)), sDaiMinted);
     }
 
     function testWithdraw() public{
@@ -70,22 +70,22 @@ contract NovaAdapterVeloTest is Test {
         underlying.transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        underlying.approve(address(vault), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
+        underlying.approve(address(adapter), aliceUnderlyingAmount);
+        assertEq(underlying.allowance(alice, address(adapter)), aliceUnderlyingAmount);
 
         vm.prank(alice);
-        (bool succesDeposit, uint256 sDaiMinted) = vault.deposit(aliceUnderlyingAmount);
+        (bool succesDeposit, uint256 sDaiMinted) = adapter.deposit(aliceUnderlyingAmount);
         assert(succesDeposit);
         assertEq(underlying.balanceOf(alice), 0);
-        assertEq(vault.balanceOf(alice), sDaiMinted);
-        assertEq(ERC20(sDAI).balanceOf(address(vault)), sDaiMinted);
+        assertEq(adapter.balanceOf(alice), sDaiMinted);
+        assertEq(ERC20(sDAI).balanceOf(address(adapter)), sDaiMinted);
 
         vm.prank(alice);
-        (bool successWithdraw, uint256 underlyingWithdrawn) = vault.withdraw(sDaiMinted);
+        (bool successWithdraw, uint256 underlyingWithdrawn) = adapter.withdraw(sDaiMinted);
         assert(successWithdraw);
         assertEq(underlying.balanceOf(alice), underlyingWithdrawn);
-        assertEq(vault.balanceOf(alice), 0);
-        assertEq(ERC20(sDAI).balanceOf(address(vault)), 0);
-        assertEq(underlying.balanceOf(address(vault)), 0);
+        assertEq(adapter.balanceOf(alice), 0);
+        assertEq(ERC20(sDAI).balanceOf(address(adapter)), 0);
+        assertEq(underlying.balanceOf(address(adapter)), 0);
     }
 }
