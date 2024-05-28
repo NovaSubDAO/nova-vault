@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {NovaAdapterVelo} from "../src/NovaAdapterVelo.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
+import {IERC20} from "../src/interfaces/IERC20.sol";
 
 contract NovaAdapterVeloTest is Test {
     address public POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
@@ -12,7 +12,6 @@ contract NovaAdapterVeloTest is Test {
     NovaAdapterVelo public adapter;
     IVelodromePool veloPool;
     address underlyingAddress;
-    ERC20 underlying;
     address private veloToken0;
     address private veloToken1;
 
@@ -30,15 +29,10 @@ contract NovaAdapterVeloTest is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        underlying = ERC20(underlyingAddress);
-
         adapter = new NovaAdapterVelo(
-            underlying,
+            underlyingAddress,
             sDAI,
-            POOL,
-            "NovaAdapterVelo",
-            "NV",
-            18
+            POOL
         );
     }
 
@@ -47,19 +41,18 @@ contract NovaAdapterVeloTest is Test {
         address alice = address(0xABCD);
 
         vm.prank(underlyingWhale);
-        underlying.transfer(alice, aliceUnderlyingAmount);
+        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        underlying.approve(address(adapter), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(adapter)), aliceUnderlyingAmount);
+        IERC20(underlyingAddress).approve(address(adapter), aliceUnderlyingAmount);
+        assertEq(IERC20(underlyingAddress).allowance(alice, address(adapter)), aliceUnderlyingAmount);
 
         vm.prank(alice);
         (bool success, uint256 sDaiMinted) = adapter.deposit(aliceUnderlyingAmount);
        
         assert(success);
-        assertEq(underlying.balanceOf(alice), 0);
-        assertEq(adapter.balanceOf(alice), sDaiMinted);
-        assertEq(ERC20(sDAI).balanceOf(address(adapter)), sDaiMinted);
+        assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
+        assertEq(IERC20(sDAI).balanceOf(alice), sDaiMinted);
     }
 
     function testWithdraw() public{
@@ -67,25 +60,25 @@ contract NovaAdapterVeloTest is Test {
         address alice = address(0xABCD);
 
         vm.prank(underlyingWhale);
-        underlying.transfer(alice, aliceUnderlyingAmount);
+        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        underlying.approve(address(adapter), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(adapter)), aliceUnderlyingAmount);
+        IERC20(underlyingAddress).approve(address(adapter), aliceUnderlyingAmount);
+        assertEq(IERC20(underlyingAddress).allowance(alice, address(adapter)), aliceUnderlyingAmount);
 
         vm.prank(alice);
         (bool succesDeposit, uint256 sDaiMinted) = adapter.deposit(aliceUnderlyingAmount);
         assert(succesDeposit);
-        assertEq(underlying.balanceOf(alice), 0);
-        assertEq(adapter.balanceOf(alice), sDaiMinted);
-        assertEq(ERC20(sDAI).balanceOf(address(adapter)), sDaiMinted);
+        assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
+        assertEq(IERC20(sDAI).balanceOf(alice), sDaiMinted);
 
+        vm.prank(alice);
+        IERC20(sDAI).approve(address(adapter), sDaiMinted);
         vm.prank(alice);
         (bool successWithdraw, uint256 underlyingWithdrawn) = adapter.withdraw(sDaiMinted);
         assert(successWithdraw);
-        assertEq(underlying.balanceOf(alice), underlyingWithdrawn);
-        assertEq(adapter.balanceOf(alice), 0);
-        assertEq(ERC20(sDAI).balanceOf(address(adapter)), 0);
-        assertEq(underlying.balanceOf(address(adapter)), 0);
+        assertEq(IERC20(underlyingAddress).balanceOf(alice), underlyingWithdrawn);
+        assertEq(IERC20(sDAI).balanceOf(alice), 0);
+        assertEq(IERC20(underlyingAddress).balanceOf(address(adapter)), 0);
     }
 }
