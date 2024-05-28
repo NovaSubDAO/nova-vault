@@ -18,6 +18,7 @@ contract NovaVaultTest is Test {
     address private veloToken1;
     address[] stables;
     address[] novaAdapters;
+    event Referral(uint16 referral, address indexed depositor, uint256 amount);
 
     address public underlyingWhale = 0xacD03D601e5bB1B275Bb94076fF46ED9D753435A;
 
@@ -56,8 +57,11 @@ contract NovaVaultTest is Test {
         IERC20(underlyingAddress).approve(address(vault), aliceUnderlyingAmount);
         assertEq(IERC20(underlyingAddress).allowance(alice, address(vault)), aliceUnderlyingAmount);
 
+        vm.expectEmit(address(vault));
+        emit Referral(111, alice, aliceUnderlyingAmount);
+
         vm.prank(alice);
-        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(underlyingAddress, aliceUnderlyingAmount);
+        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(underlyingAddress, aliceUnderlyingAmount, 111);
         assert(successDeposit);
         assertEq(IERC20(underlyingAddress).allowance(alice, address(vault)), 0);
         assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);

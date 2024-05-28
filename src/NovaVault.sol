@@ -9,6 +9,7 @@ import {IERC20} from "./interfaces/IERC20.sol";
 contract NovaVault is INovaVault {
     mapping(address => address) public _novaAdapters;
     address immutable sDAI;
+    event Referral(uint16 referral, address indexed depositor, uint256 amount);
 
     constructor(
         address _sDAI,
@@ -54,7 +55,7 @@ contract NovaVault is INovaVault {
         emit AdapterApproval(stable, adapter);
     }
 
-    function deposit(address stable, uint256 assets) external returns (bool, uint256) {
+    function deposit(address stable, uint256 assets, uint16 referral) external returns (bool, uint256) {
         address adapter = _novaAdapters[stable];
         require(
             adapter != address(0),
@@ -71,6 +72,8 @@ contract NovaVault is INovaVault {
         require(success && successDeposit, "Deposit failed");
 
         IERC20(sDAI).transfer(msg.sender, sDaiAmount);
+
+        emit Referral(referral, msg.sender, assets);
 
         return (true, sDaiAmount);
     }
