@@ -1,29 +1,31 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {Test, console} from "forge-std/Test.sol";
 import {NovaVault} from "../src/NovaVault.sol";
 import {NovaAdapterVelo} from "../src/NovaAdapterVelo.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
+import {IERC20} from "../src/interfaces/IERC20.sol";
 
 contract NovaVaultTest is Test {
-    address public POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
+    address public POOL_A = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
+    address public POOL_B = 0xe899B1B1d88E0198c668bb5500A0a4eDA12AE3c8;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
-    NovaAdapterVelo public adapter;
+    NovaAdapterVelo public adapterA;
     NovaVault public vault;
     IVelodromePool veloPool;
     address underlyingAddress;
-    ERC20 underlying;
     address private veloToken0;
     address private veloToken1;
     address[] stables;
     address[] novaAdapters;
+    event Referral(uint16 referral, address indexed depositor, uint256 amount);
+    event AdapterApproval(address indexed stable, address indexed adapter);
 
     address public underlyingWhale = 0xacD03D601e5bB1B275Bb94076fF46ED9D753435A;
 
     function setUp() public {
-        veloPool = IVelodromePool(POOL);
+        veloPool = IVelodromePool(POOL_A);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
         if (veloToken0 == sDAI) {
@@ -34,21 +36,12 @@ contract NovaVaultTest is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        underlying = ERC20(underlyingAddress);
-
-        adapter = new NovaAdapterVelo(
-            underlying,
-            sDAI,
-            POOL,
-            "NovaAdapterVelo",
-            "NV",
-            18
-        );
+        adapterA = new NovaAdapterVelo(underlyingAddress, sDAI, POOL_A);
 
         stables.push(underlyingAddress);
-        novaAdapters.push(address(adapter));
+        novaAdapters.push(address(adapterA));
 
-        vault = new NovaVault(stables, novaAdapters);
+        vault = new NovaVault(sDAI, stables, novaAdapters);
     }
 
     function testNovaVaultDepositAndWithdraw() public {
@@ -56,20 +49,115 @@ contract NovaVaultTest is Test {
         address alice = address(0xABCD);
 
         vm.prank(underlyingWhale);
-        underlying.transfer(alice, aliceUnderlyingAmount);
+        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        underlying.approve(address(vault), aliceUnderlyingAmount);
-        assertEq(underlying.allowance(alice, address(vault)), aliceUnderlyingAmount);
+        IERC20(underlyingAddress).approve(
+            address(vault),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(vault)),
+            aliceUnderlyingAmount
+        );
 
+        vm.expectEmit(address(vault));
+        emit Referral(111, alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        (bool success, bytes memory data) = vault.deposit(address(underlyingAddress), aliceUnderlyingAmount);
-        assert(success);
+        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(
+            underlyingAddress,
+            aliceUnderlyingAmount,
+            111
+        );
+        assert(successDeposit);
+        assertEq(IERC20(underlyingAddress).allowance(alice, address(vault)), 0);
+        assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
+        assertEq(IERC20(sDAI).balanceOf(alice), sDaiAmount);
 
         vm.prank(alice);
-        (success, data) = vault.withdraw(underlyingAddress, aliceUnderlyingAmount);
-        assert(success);
+        IERC20(sDAI).approve(address(vault), sDaiAmount);
+        assertEq(IERC20(sDAI).allowance(alice, address(vault)), sDaiAmount);
+
+        vm.prank(alice);
+        (bool successWithdraw, uint256 assetsAmount) = vault.withdraw(
+            underlyingAddress,
+            sDaiAmount
+        );
+        assert(successWithdraw);
+        assertEq(IERC20(sDAI).allowance(alice, address(vault)), 0);
+        assertEq(IERC20(sDAI).balanceOf(alice), 0);
+        assertEq(IERC20(underlyingAddress).balanceOf(alice), assetsAmount);
     }
 
+    function testSwitchAdapter() public {
+        IVelodromePool veloPoolB = IVelodromePool(POOL_B);
+
+        veloToken0 = veloPoolB.token0();
+        veloToken1 = veloPoolB.token1();
+
+        if (veloToken0 == sDAI) {
+            underlyingAddress = veloToken1;
+        } else if (veloToken1 == sDAI) {
+            underlyingAddress = veloToken0;
+        } else {
+            revert("Velodrome pool should be made of `asset` and `sDAI`!");
+        }
+
+        NovaAdapterVelo adapterB = new NovaAdapterVelo(
+            underlyingAddress,
+            sDAI,
+            POOL_B
+        );
+
+        uint256 aliceUnderlyingAmount = 100 * 1e6;
+        address alice = address(0xABCD);
+
+        vm.prank(underlyingWhale);
+        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
+
+        assertEq(vault._novaAdapters(underlyingAddress), address(adapterA));
+        vault.switchAdapter(underlyingAddress, address(adapterB));
+        assertEq(vault._novaAdapters(underlyingAddress), address(adapterB));
+
+        vm.prank(alice);
+        IERC20(underlyingAddress).approve(
+            address(vault),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(vault)),
+            aliceUnderlyingAmount
+        );
+
+        vm.expectEmit(address(vault));
+        emit Referral(111, alice, aliceUnderlyingAmount);
+
+        vm.prank(alice);
+        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(
+            underlyingAddress,
+            aliceUnderlyingAmount,
+            111
+        );
+        assert(successDeposit);
+
+        assert(successDeposit);
+        assertEq(IERC20(underlyingAddress).allowance(alice, address(vault)), 0);
+        assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
+        assertEq(IERC20(sDAI).balanceOf(alice), sDaiAmount);
+
+        vm.prank(alice);
+        IERC20(sDAI).approve(address(vault), sDaiAmount);
+        assertEq(IERC20(sDAI).allowance(alice, address(vault)), sDaiAmount);
+
+        vm.prank(alice);
+        (bool successWithdraw, uint256 assetsAmount) = vault.withdraw(
+            underlyingAddress,
+            sDaiAmount
+        );
+        assert(successWithdraw);
+        assertEq(IERC20(sDAI).allowance(alice, address(vault)), 0);
+        assertEq(IERC20(sDAI).balanceOf(alice), 0);
+        assertEq(IERC20(underlyingAddress).balanceOf(alice), assetsAmount);
+    }
 }
