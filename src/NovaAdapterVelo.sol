@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {IVelodromePool} from "src/interfaces/IVelodromePool.sol";
+import {IVelodromePool} from "./interfaces/IVelodromePool.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 import {NovaAdapterBase} from "./NovaAdapterBase.sol";
 
 contract NovaAdapterVelo is NovaAdapterBase {
@@ -14,20 +14,17 @@ contract NovaAdapterVelo is NovaAdapterBase {
     IVelodromePool public veloPool;
 
     constructor(
-        ERC20 _asset,
+        address _asset,
         address _sDAI,
-        address _pool,
-        string memory _name,
-        string memory _symbol,
-        uint8 _decimals
-    ) NovaAdapterBase(_asset, _sDAI, _name, _symbol, _decimals) {
+        address _pool
+    ) NovaAdapterBase(_asset, _sDAI) {
         veloPool = IVelodromePool(_pool);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
-        if ((veloToken0 == address(asset)) && (veloToken1 == sDAI)) {
+        if ((veloToken0 == asset) && (veloToken1 == sDAI)) {
             isStableFirst = true;
-        } else if ((veloToken0 == sDAI) && (veloToken1 == address(asset))) {
+        } else if ((veloToken0 == sDAI) && (veloToken1 == asset)) {
             isStableFirst = false;
         } else {
             revert("Velodrome pool should be made of `_asset` and `sDAI`!");
@@ -42,10 +39,10 @@ contract NovaAdapterVelo is NovaAdapterBase {
         require(msg.sender == address(veloPool), "Caller is not VelodromePool");
 
         if (amount0Delta > 0){
-            ERC20(veloToken0).transfer(msg.sender, uint256(amount0Delta));
+            IERC20(veloToken0).transfer(msg.sender, uint256(amount0Delta));
         }
         if (amount1Delta > 0){
-            ERC20(veloToken1).transfer(msg.sender, uint256(amount1Delta));
+            IERC20(veloToken1).transfer(msg.sender, uint256(amount1Delta));
         }
     }
 
@@ -68,7 +65,7 @@ contract NovaAdapterVelo is NovaAdapterBase {
         return (amount0, amount1);
     }
 
-    function getAsset() external view returns (ERC20) {
+    function getAsset() external view returns (address) {
         return asset;
     }
 }

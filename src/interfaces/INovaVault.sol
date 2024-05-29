@@ -2,5 +2,5 @@
 pragma solidity ^0.8.13;
 
 interface INovaVault {
-    event ApprovedAdapter(address stable, address adapter);
+    event AdapterApproval(address stable, address adapter);
 }
