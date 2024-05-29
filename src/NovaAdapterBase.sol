@@ -25,15 +25,15 @@ abstract contract NovaAdapterBase {
     function deposit(uint256 assets) external returns (bool, uint256) {
         bool successFirst = IERC20(asset).transferFrom(msg.sender, address(this), assets);
 
-        (, int256 sDai) = _swap(int256(assets), true);
-        uint256 sDaiToMint = uint256(-sDai);
-        bool successSecond = IERC20(sDAI).transfer(msg.sender, sDaiToMint);
+        (, int256 sDaiOut) = _swap(int256(assets), true);
+        uint256 sDaiToTransfer = uint256(-sDaiOut);
+        bool successSecond = IERC20(sDAI).transfer(msg.sender, sDaiToTransfer);
 
         if(!successFirst || !successSecond){
             revert TransferFailed(msg.sender, address(this), assets);
         }
 
-        return (true, sDaiToMint);
+        return (true, sDaiToTransfer);
     }
 
     function withdraw(uint256 shares) external returns (bool, uint256) {
