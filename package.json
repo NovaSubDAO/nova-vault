@@ -1,0 +1,22 @@
+{
+  "name": "nova-vault",
+  "version": "1.0.0",
+  "description": "## introduction",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prettier:check": "prettier --plugin=prettier-plugin-solidity --check \"src/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\"",
+    "prettier:write": "prettier --plugin=prettier-plugin-solidity --write \"src/**/*.sol\" \"test/**/*.sol\" \"script/**/*.sol\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "prettier": "^3.2.5",
+    "prettier-plugin-solidity": "^1.3.1"
+  }
+}

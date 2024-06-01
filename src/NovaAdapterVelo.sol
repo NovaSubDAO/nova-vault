@@ -6,7 +6,6 @@ import {IERC20} from "./interfaces/IERC20.sol";
 import {NovaAdapterBase} from "./NovaAdapterBase.sol";
 
 contract NovaAdapterVelo is NovaAdapterBase {
-
     bool private isStableFirst;
     address immutable veloToken0;
     address immutable veloToken1;
@@ -38,10 +37,10 @@ contract NovaAdapterVelo is NovaAdapterBase {
     ) external {
         require(msg.sender == address(veloPool), "Caller is not VelodromePool");
 
-        if (amount0Delta > 0){
+        if (amount0Delta > 0) {
             IERC20(veloToken0).transfer(msg.sender, uint256(amount0Delta));
         }
-        if (amount1Delta > 0){
+        if (amount1Delta > 0) {
             IERC20(veloToken1).transfer(msg.sender, uint256(amount1Delta));
         }
     }
@@ -53,7 +52,7 @@ contract NovaAdapterVelo is NovaAdapterBase {
         (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
         uint160 num = fromStableTosDai ? 95 : 105;
         int256 sign = isStableFirst ? int256(1) : int256(-1);
-        
+
         (int256 amount0, int256 amount1) = veloPool.swap(
             address(this),
             fromStableTosDai,
