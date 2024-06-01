@@ -1,20 +1,27 @@
 #!/bin/sh
 
+# Get the current branch name
 branch=$(git symbolic-ref HEAD | sed -e 's,.*/\(.*\),\1,')
 
-# Make sure branch != main branch
-
+# Block commits to the main branch
 if [ "$branch" = "main" ]; then
     echo "You are on the main branch. Commit blocked."
     exit 1
 fi
 
-exit 0
+# Run Prettier and add all changed files to the commit
+npm run prettier:check
+if [ $? -ne 0 ]; then
+    echo "Prettier found issues that need to be resolved."
+    exit 1
+fi
 
-# Make sure branch name starts will allowed prefixes
+git add -A
 
+# Allowed branch prefixes
 PREFIXES="feat/ fix/ doc/ chore/ refactor/ test/"
 
+# Check if branch name starts with an allowed prefix
 for prefix in $PREFIXES; do
     case $branch in
         $prefix*)
@@ -23,5 +30,6 @@ for prefix in $PREFIXES; do
     esac
 done
 
+# If none of the prefixes match, block the commit
 echo "Commit blocked: Branch name must start with one of the following prefixes: $PREFIXES"
 exit 1
