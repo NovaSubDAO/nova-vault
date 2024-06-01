@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-
 library Errors {
     string public constant INVALID_ADDRESS = "1";
     string public constant ADAPTER_ALREADY_APPROVED = "2";

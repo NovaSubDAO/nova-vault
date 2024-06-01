@@ -29,14 +29,10 @@ contract NovaAdapterVeloTest is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        adapter = new NovaAdapterVelo(
-            underlyingAddress,
-            sDAI,
-            POOL
-        );
+        adapter = new NovaAdapterVelo(underlyingAddress, sDAI, POOL);
     }
 
-    function testDeposit() public{
+    function testDeposit() public {
         uint256 aliceUnderlyingAmount = 100 * 1e6;
         address alice = address(0xABCD);
 
@@ -44,18 +40,26 @@ contract NovaAdapterVeloTest is Test {
         IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        IERC20(underlyingAddress).approve(address(adapter), aliceUnderlyingAmount);
-        assertEq(IERC20(underlyingAddress).allowance(alice, address(adapter)), aliceUnderlyingAmount);
+        IERC20(underlyingAddress).approve(
+            address(adapter),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(adapter)),
+            aliceUnderlyingAmount
+        );
 
         vm.prank(alice);
-        (bool success, uint256 sDaiMinted) = adapter.deposit(aliceUnderlyingAmount);
-       
+        (bool success, uint256 sDaiMinted) = adapter.deposit(
+            aliceUnderlyingAmount
+        );
+
         assert(success);
         assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
         assertEq(IERC20(sDAI).balanceOf(alice), sDaiMinted);
     }
 
-    function testWithdraw() public{
+    function testWithdraw() public {
         uint256 aliceUnderlyingAmount = 100 * 1e6;
         address alice = address(0xABCD);
 
@@ -63,11 +67,19 @@ contract NovaAdapterVeloTest is Test {
         IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        IERC20(underlyingAddress).approve(address(adapter), aliceUnderlyingAmount);
-        assertEq(IERC20(underlyingAddress).allowance(alice, address(adapter)), aliceUnderlyingAmount);
+        IERC20(underlyingAddress).approve(
+            address(adapter),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(adapter)),
+            aliceUnderlyingAmount
+        );
 
         vm.prank(alice);
-        (bool succesDeposit, uint256 sDaiMinted) = adapter.deposit(aliceUnderlyingAmount);
+        (bool succesDeposit, uint256 sDaiMinted) = adapter.deposit(
+            aliceUnderlyingAmount
+        );
         assert(succesDeposit);
         assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
         assertEq(IERC20(sDAI).balanceOf(alice), sDaiMinted);
@@ -75,9 +87,14 @@ contract NovaAdapterVeloTest is Test {
         vm.prank(alice);
         IERC20(sDAI).approve(address(adapter), sDaiMinted);
         vm.prank(alice);
-        (bool successWithdraw, uint256 underlyingWithdrawn) = adapter.withdraw(sDaiMinted);
+        (bool successWithdraw, uint256 underlyingWithdrawn) = adapter.withdraw(
+            sDaiMinted
+        );
         assert(successWithdraw);
-        assertEq(IERC20(underlyingAddress).balanceOf(alice), underlyingWithdrawn);
+        assertEq(
+            IERC20(underlyingAddress).balanceOf(alice),
+            underlyingWithdrawn
+        );
         assertEq(IERC20(sDAI).balanceOf(alice), 0);
         assertEq(IERC20(underlyingAddress).balanceOf(address(adapter)), 0);
     }

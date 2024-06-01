@@ -33,10 +33,7 @@ contract NovaVault is INovaVault {
         }
     }
 
-    function _approveAdapter(
-        address stable,
-        address adapter
-    ) internal  {
+    function _approveAdapter(address stable, address adapter) internal {
         require(stable != address(0), Errors.INVALID_ADDRESS);
 
         require(
@@ -45,7 +42,7 @@ contract NovaVault is INovaVault {
         );
 
         address underlyingAsset = INovaAdapterBase(adapter).getAsset();
-        
+
         require(
             underlyingAsset == stable,
             Errors.INVALID_STABLE_TO_ADAPTER_MAPPING
@@ -55,12 +52,13 @@ contract NovaVault is INovaVault {
         emit AdapterApproval(stable, adapter);
     }
 
-    function deposit(address stable, uint256 assets, uint16 referral) external returns (bool, uint256) {
+    function deposit(
+        address stable,
+        uint256 assets,
+        uint16 referral
+    ) external returns (bool, uint256) {
         address adapter = _novaAdapters[stable];
-        require(
-            adapter != address(0),
-            Errors.NO_ADAPTER_APPROVED
-        );
+        require(adapter != address(0), Errors.NO_ADAPTER_APPROVED);
 
         IERC20(stable).transferFrom(msg.sender, address(this), assets);
         IERC20(stable).approve(adapter, assets);
@@ -68,7 +66,10 @@ contract NovaVault is INovaVault {
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("deposit(uint256)", assets)
         );
-        (bool successDeposit, uint256 sDaiAmount) = abi.decode(data, (bool, uint256));
+        (bool successDeposit, uint256 sDaiAmount) = abi.decode(
+            data,
+            (bool, uint256)
+        );
         require(success && successDeposit, "Deposit failed");
 
         IERC20(sDAI).transfer(msg.sender, sDaiAmount);
@@ -78,12 +79,12 @@ contract NovaVault is INovaVault {
         return (true, sDaiAmount);
     }
 
-    function withdraw(address stable, uint256 shares) external returns (bool, uint256) {
+    function withdraw(
+        address stable,
+        uint256 shares
+    ) external returns (bool, uint256) {
         address adapter = _novaAdapters[stable];
-        require(
-            adapter != address(0),
-            Errors.NO_ADAPTER_APPROVED
-        );
+        require(adapter != address(0), Errors.NO_ADAPTER_APPROVED);
 
         IERC20(sDAI).transferFrom(msg.sender, address(this), shares);
         IERC20(sDAI).approve(adapter, shares);
@@ -91,7 +92,10 @@ contract NovaVault is INovaVault {
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("withdraw(uint256)", shares)
         );
-        (bool successWithdraw, uint256 assetsAmount) = abi.decode(data, (bool, uint256));
+        (bool successWithdraw, uint256 assetsAmount) = abi.decode(
+            data,
+            (bool, uint256)
+        );
 
         require(success && successWithdraw, "Withdraw failed");
 

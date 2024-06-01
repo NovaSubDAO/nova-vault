@@ -34,11 +34,7 @@ contract NovaVaultTest is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        adapter = new NovaAdapterVelo(
-            underlyingAddress,
-            sDAI,
-            POOL
-        );
+        adapter = new NovaAdapterVelo(underlyingAddress, sDAI, POOL);
 
         stables.push(underlyingAddress);
         novaAdapters.push(address(adapter));
@@ -54,14 +50,24 @@ contract NovaVaultTest is Test {
         IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        IERC20(underlyingAddress).approve(address(vault), aliceUnderlyingAmount);
-        assertEq(IERC20(underlyingAddress).allowance(alice, address(vault)), aliceUnderlyingAmount);
+        IERC20(underlyingAddress).approve(
+            address(vault),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(vault)),
+            aliceUnderlyingAmount
+        );
 
         vm.expectEmit(address(vault));
         emit Referral(111, alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(underlyingAddress, aliceUnderlyingAmount, 111);
+        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(
+            underlyingAddress,
+            aliceUnderlyingAmount,
+            111
+        );
         assert(successDeposit);
         assertEq(IERC20(underlyingAddress).allowance(alice, address(vault)), 0);
         assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
@@ -72,7 +78,10 @@ contract NovaVaultTest is Test {
         assertEq(IERC20(sDAI).allowance(alice, address(vault)), sDaiAmount);
 
         vm.prank(alice);
-        (bool successWithdraw, uint256 assetsAmount) = vault.withdraw(underlyingAddress, sDaiAmount);
+        (bool successWithdraw, uint256 assetsAmount) = vault.withdraw(
+            underlyingAddress,
+            sDaiAmount
+        );
         assert(successWithdraw);
         assertEq(IERC20(sDAI).allowance(alice, address(vault)), 0);
         assertEq(IERC20(sDAI).balanceOf(alice), 0);
