@@ -49,17 +49,23 @@ contract NovaAdapterVeloPool is NovaAdapterBase {
         int256 amount,
         bool fromStableTosDai
     ) internal override returns (int256, int256) {
-        uint256 amount0Out = 0;
-        uint256 amount1Out = 0;
+        uint256 amount0Out;
+        uint256 amount1Out;
 
         if (fromStableTosDai) {
             IERC20(asset).transfer(address(veloPool), uint256(amount));
+
+            amount0Out = 0;
             amount1Out = veloPool.getAmountOut(uint256(amount), asset);
-            veloPool.swap(0, amount1Out, address(this), "");
+
+            veloPool.swap(amount0Out, amount1Out, address(this), "");
         } else {
             IERC20(sDAI).transfer(address(veloPool), uint256(amount));
+
             amount0Out = veloPool.getAmountOut(uint256(amount), sDAI);
-            veloPool.swap(amount0Out, 0, address(this), "");
+            amount1Out = 0;
+
+            veloPool.swap(amount0Out, amount1Out, address(this), "");
         }
 
         return (int256(amount0Out), int256(amount1Out));

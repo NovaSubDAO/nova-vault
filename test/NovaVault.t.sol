@@ -98,7 +98,7 @@ contract NovaVaultTest is Test {
     }
 
     function testReplaceAdapter() public {
-        uint256 aliceUnderlyingAmount = 100 * 1e6;
+        uint256 aliceUnderlyingAmount = 10 * 1e6;
         address alice = address(0xABCD);
 
         IVelodromePool veloPool = IVelodromePool(POOL);
