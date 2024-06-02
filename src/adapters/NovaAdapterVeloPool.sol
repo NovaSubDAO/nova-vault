@@ -58,7 +58,7 @@ contract NovaAdapterVeloPool is NovaAdapterBase {
             veloPool.swap(0, amount1Out, address(this), "");
         } else {
             IERC20(sDAI).transfer(address(veloPool), uint256(amount));
-            amount0Out = veloPool.getAmountOut(uint256(amount), asset);
+            amount0Out = veloPool.getAmountOut(uint256(amount), sDAI);
             veloPool.swap(amount0Out, 0, address(this), "");
         }
 
