@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {IVelodromePoolB} from "./interfaces/IVelodromePoolB.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
-import {NovaAdapterBase} from "./NovaAdapterBase.sol";
+import {IVelodromePool} from "../interfaces/IVelodromePool.sol";
+import {IERC20} from "../interfaces/IERC20.sol";
+import {NovaAdapterBase} from "../NovaAdapterBase.sol";
 
-contract NovaAdapterVeloB is NovaAdapterBase {
+contract NovaAdapterVeloPool is NovaAdapterBase {
     bool private isStableFirst;
     address immutable veloToken0;
     address immutable veloToken1;
 
-    IVelodromePoolB public veloPool;
+    IVelodromePool public veloPool;
 
     constructor(
         address _asset,
         address _sDAI,
         address _pool
     ) NovaAdapterBase(_asset, _sDAI) {
-        veloPool = IVelodromePoolB(_pool);
+        veloPool = IVelodromePool(_pool);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
@@ -46,13 +46,14 @@ contract NovaAdapterVeloB is NovaAdapterBase {
     }
 
     function _swap(
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address to
-    ) internal override returns (int256) {
-        veloPool.swap(amount0Out, amount1Out, to, "");
+        int256 amount,
+        bool fromStableTosDai
+    ) internal override returns (int256, int256) {
+        uint256 amount0Out = fromStableTosDai ? uint256(amount) : 0;
+        uint256 amount1Out = fromStableTosDai ? 0 : uint256(amount);
+        veloPool.swap(amount0Out, amount1Out, address(this), "");
 
-        return int256(veloPool.getAmountOut(amount0Out, veloToken0));
+        return (int256(amount0Out), int256(amount1Out));
     }
 
     function getAsset() external view returns (address) {

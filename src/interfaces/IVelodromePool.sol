@@ -3,10 +3,9 @@ pragma solidity 0.8.17;
 
 interface IVelodromePool {
     function swap(
-        address recipient,
-        bool zeroForOne,
-        int256 amountSpecified,
-        uint160 sqrtPriceLimitX96,
+        uint256 amount0Out,
+        uint256 amount1Out,
+        address to,
         bytes calldata data
     ) external returns (int256 amount0, int256 amount1);
 
@@ -14,15 +13,8 @@ interface IVelodromePool {
 
     function token1() external view returns (address);
 
-    function slot0()
-        external
-        view
-        returns (
-            uint160 sqrtPriceX96,
-            int24 tick,
-            uint16 observationIndex,
-            uint16 observationCardinality,
-            uint16 observationCardinalityNext,
-            bool unlocked
-        );
+    function getAmountOut(
+        uint256 amountIn,
+        address tokenIn
+    ) external view returns (uint256);
 }
