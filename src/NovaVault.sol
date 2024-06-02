@@ -66,6 +66,10 @@ contract NovaVault is INovaVault, ReentrancyGuard {
         emit AdapterApproval(stable, adapter);
     }
 
+    function replaceAdapter(address stable, address adapter) external {
+        _approveAdapter(stable, adapter);
+    }
+
     function deposit(
         address stable,
         uint256 assets,
