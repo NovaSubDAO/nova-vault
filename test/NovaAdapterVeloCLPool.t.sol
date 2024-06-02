@@ -2,15 +2,15 @@
 pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
-import {NovaAdapterVelo} from "../src/NovaAdapterVelo.sol";
-import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
+import {NovaAdapterVeloCLPool} from "../src/adapters/NovaAdapterVeloCLPool.sol";
+import {IVelodromeCLPool} from "../src/interfaces/IVelodromeCLPool.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 
 contract NovaAdapterVeloTest is Test {
     address public POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
-    NovaAdapterVelo public adapter;
-    IVelodromePool veloPool;
+    NovaAdapterVeloCLPool public adapter;
+    IVelodromeCLPool veloPool;
     address underlyingAddress;
     address private veloToken0;
     address private veloToken1;
@@ -18,7 +18,7 @@ contract NovaAdapterVeloTest is Test {
     address public underlyingWhale = 0xacD03D601e5bB1B275Bb94076fF46ED9D753435A;
 
     function setUp() public {
-        veloPool = IVelodromePool(POOL);
+        veloPool = IVelodromeCLPool(POOL);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
         if (veloToken0 == sDAI) {
@@ -29,7 +29,7 @@ contract NovaAdapterVeloTest is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        adapter = new NovaAdapterVelo(underlyingAddress, sDAI, POOL);
+        adapter = new NovaAdapterVeloCLPool(underlyingAddress, sDAI, POOL);
     }
 
     function testDeposit() public {
