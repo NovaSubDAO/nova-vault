@@ -37,7 +37,7 @@ contract NovaVault is INovaVault {
         require(stable != address(0), Errors.INVALID_ADDRESS);
 
         require(
-            _novaAdapters[stable] == address(0),
+            _novaAdapters[stable] != adapter,
             Errors.ADAPTER_ALREADY_APPROVED
         );
 
@@ -50,6 +50,10 @@ contract NovaVault is INovaVault {
 
         _novaAdapters[stable] = adapter;
         emit AdapterApproval(stable, adapter);
+    }
+
+    function replaceAdapter(address stable, address adapter) external {
+        _approveAdapter(stable, adapter);
     }
 
     function deposit(

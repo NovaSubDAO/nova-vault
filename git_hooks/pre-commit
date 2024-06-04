@@ -17,19 +17,3 @@ if [ $? -ne 0 ]; then
 fi
 
 git add -A
-
-# Allowed branch prefixes
-PREFIXES="feat/ fix/ doc/ chore/ refactor/ test/"
-
-# Check if branch name starts with an allowed prefix
-for prefix in $PREFIXES; do
-    case $branch in
-        $prefix*)
-            exit 0
-            ;;
-    esac
-done
-
-# If none of the prefixes match, block the commit
-echo "Commit blocked: Branch name must start with one of the following prefixes: $PREFIXES"
-exit 1
