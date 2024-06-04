@@ -24,3 +24,8 @@ run the following command to install git hooks to your local repo:
 export OPTIMISM_ALCHEMY_KEY=
 forge test --fork-url optimism -vvv
 ```
+
+## contracts
+
+- [NovaAdapterVelo](https://optimistic.etherscan.io/address/0x56ebcb8e3db5324e0ce697babe66805e060b3733)
+- [NovaVault](https://optimistic.etherscan.io/address/0x36a2f7fb07c102415afe2461a9a43377970e081c)
