@@ -14,7 +14,7 @@ contract Deploy is Script {
 
         vm.startBroadcast(privateKey);
 
-        address POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
+        address POOL = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
         address sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
         NovaAdapterVelo adapter;
         NovaVault vault;
