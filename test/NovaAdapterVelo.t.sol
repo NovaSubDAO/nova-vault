@@ -7,7 +7,7 @@ import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 
 contract NovaAdapterVeloTest is Test {
-    address public POOL = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
+    address public POOL = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
     NovaAdapterVelo public adapter;
     IVelodromePool veloPool;

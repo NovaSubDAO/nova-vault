@@ -27,5 +27,5 @@ forge test --fork-url optimism -vvv
 
 ## contracts
 
-- [NovaAdapterVelo](https://optimistic.etherscan.io/address/0x56ebcb8e3db5324e0ce697babe66805e060b3733)
-- [NovaVault](https://optimistic.etherscan.io/address/0x36a2f7fb07c102415afe2461a9a43377970e081c)
+- [NovaAdapterVelo](https://optimistic.etherscan.io/address/0xA0E5013486E9fecC15835B9D9c76bB209eA48273)
+- [NovaVault](https://optimistic.etherscan.io/address/0x7A8F265F2d1362ED8b6D5dd52E82741217BE8D3C)
