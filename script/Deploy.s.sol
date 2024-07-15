@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity 0.8.20;
+pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 import {NovaVault} from "../src/NovaVault.sol";
+import {NovaVaultV2} from "../src/NovaVaultV2.sol";
 import {NovaAdapterVelo} from "../src/NovaAdapterVelo.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 
@@ -18,6 +19,7 @@ contract Deploy is Script {
         address sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
         NovaAdapterVelo adapter;
         NovaVault vault;
+        NovaVaultV2 vaultV2;
         IVelodromePool veloPool;
         address underlyingAddress;
         address veloToken0;
@@ -51,6 +53,13 @@ contract Deploy is Script {
         novaAdapters[0] = address(adapter);
 
         vault = new NovaVault(sDAI, stables, novaAdapters);
+        console.log("NovaVault address is ", address(vault));
+
+        //////////////////
+        // NovaVaultV2 Deployment
+        //////////////////
+
+        vaultV2 = new NovaVaultV2(sDAI);
         console.log("NovaVault address is ", address(vault));
 
         vm.stopBroadcast();
