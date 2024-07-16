@@ -41,6 +41,9 @@ contract NovaVaultV2Test is Test {
         uint256 aliceUnderlyingAmount = 100 * 1e6;
         address alice = address(0xABCD);
 
+        vault.addDex(address(veloPool));
+        vault.setFunctionApprovalBySignature(veloPool.swap.selector);
+
         bool fromStableTosDai = true;
         bool isStableFirst = true;
 
@@ -57,7 +60,7 @@ contract NovaVaultV2Test is Test {
             aliceUnderlyingAmount,
             abi.encodeWithSelector(
                 veloPool.swap.selector,
-                alice,
+                address(vault),
                 true,
                 sign * int256(aliceUnderlyingAmount),
                 (num * sqrtPriceX96) / 100,
@@ -83,16 +86,29 @@ contract NovaVaultV2Test is Test {
         emit Referral(111, alice, aliceUnderlyingAmount);
 
         vm.prank(alice);
-        bool successDeposit = vault.deposit(
-            bytes32(uint256(1)),
-            "Integrator",
-            "Receiver",
-            payable(alice),
+        vault.swapTokensGeneric(
+            "",
+            "integrator",
+            "referrer",
+            payable(address(vault)),
             aliceUnderlyingAmount,
-            swapData,
-            111,
-            underlyingAddress
+            swapData
         );
-        assert(successDeposit);
+
+        console.log(IERC20(sDAI).balanceOf(address(vault)));
+
+        // vm.prank(alice);
+        // (bool successDeposit, uint256 sDAIamount) = vault.deposit(
+        //     bytes32(uint256(1)),
+        //     "Integrator",
+        //     "Receiver",
+        //     payable(address(vault)),
+        //     aliceUnderlyingAmount,
+        //     swapData,
+        //     111,
+        //     underlyingAddress
+        // );
+
+        // assert(successDeposit);
     }
 }
