@@ -5,12 +5,14 @@ import {Test, console} from "forge-std/Test.sol";
 import {NovaVaultV2} from "../src/NovaVaultV2.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
-import {LibSwap} from "contracts/Libraries/LibSwap.sol";
+import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
+import {GenericSwapFacet} from "@lifi/src/Facets/GenericSwapFacet.sol";
 
 contract NovaVaultV2Test is Test {
     address public POOL = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
     NovaVaultV2 public vault;
+    GenericSwapFacet public swapFacet;
     IVelodromePool veloPool;
     address private veloToken0;
     address private veloToken1;
@@ -26,6 +28,8 @@ contract NovaVaultV2Test is Test {
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
+        swapFacet = new GenericSwapFacet();
+
         if (veloToken0 == sDAI) {
             underlyingAddress = veloToken1;
         } else if (veloToken1 == sDAI) {
@@ -34,7 +38,7 @@ contract NovaVaultV2Test is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        vault = new NovaVaultV2(sDAI);
+        vault = new NovaVaultV2(sDAI, address(swapFacet));
     }
 
     function testNovaVaultV2Deposit() public {
@@ -61,7 +65,7 @@ contract NovaVaultV2Test is Test {
             abi.encodeWithSelector(
                 veloPool.swap.selector,
                 address(vault),
-                true,
+                fromStableTosDai,
                 sign * int256(aliceUnderlyingAmount),
                 (num * sqrtPriceX96) / 100,
                 ""
@@ -85,30 +89,30 @@ contract NovaVaultV2Test is Test {
         vm.expectEmit(address(vault));
         emit Referral(111, alice, aliceUnderlyingAmount);
 
-        vm.prank(alice);
-        vault.swapTokensGeneric(
-            "",
-            "integrator",
-            "referrer",
-            payable(address(vault)),
-            aliceUnderlyingAmount,
-            swapData
-        );
+        // vm.prank(alice);
+        // vault.swapTokensGeneric(
+        //     "",
+        //     "integrator",
+        //     "referrer",
+        //     payable(address(vault)),
+        //     aliceUnderlyingAmount,
+        //     swapData
+        // );
 
         console.log(IERC20(sDAI).balanceOf(address(vault)));
 
-        // vm.prank(alice);
-        // (bool successDeposit, uint256 sDAIamount) = vault.deposit(
-        //     bytes32(uint256(1)),
-        //     "Integrator",
-        //     "Receiver",
-        //     payable(address(vault)),
-        //     aliceUnderlyingAmount,
-        //     swapData,
-        //     111,
-        //     underlyingAddress
-        // );
+        vm.prank(alice);
+        (bool successDeposit, ) = vault.deposit(
+            bytes32(uint256(1)),
+            "Integrator",
+            "Receiver",
+            payable(address(vault)),
+            aliceUnderlyingAmount,
+            swapData,
+            111,
+            underlyingAddress
+        );
 
-        // assert(successDeposit);
+        assert(successDeposit);
     }
 }

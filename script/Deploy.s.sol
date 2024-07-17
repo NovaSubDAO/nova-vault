@@ -6,6 +6,7 @@ import {NovaVault} from "../src/NovaVault.sol";
 import {NovaVaultV2} from "../src/NovaVaultV2.sol";
 import {NovaAdapterVelo} from "../src/NovaAdapterVelo.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
+import {GenericSwapFacet} from "@lifi/src/Facets/GenericSwapFacet.sol";
 
 // Deploy a contract to a deterministic address with create2 factory.
 contract Deploy is Script {
@@ -20,6 +21,7 @@ contract Deploy is Script {
         NovaAdapterVelo adapter;
         NovaVault vault;
         NovaVaultV2 vaultV2;
+        GenericSwapFacet swapFacet;
         IVelodromePool veloPool;
         address underlyingAddress;
         address veloToken0;
@@ -59,7 +61,9 @@ contract Deploy is Script {
         // NovaVaultV2 Deployment
         //////////////////
 
-        vaultV2 = new NovaVaultV2(sDAI);
+        swapFacet = new GenericSwapFacet();
+
+        vaultV2 = new NovaVaultV2(sDAI, address(swapFacet));
         console.log("NovaVault address is ", address(vault));
 
         vm.stopBroadcast();
