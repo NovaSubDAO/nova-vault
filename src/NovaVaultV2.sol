@@ -12,10 +12,24 @@ contract NovaVaultV2 {
     address immutable swapFacet;
     event Referral(uint16 referral, address indexed depositor, uint256 amount);
     error GenericSwapFailed();
+    error InvalidAssetId();
 
     constructor(address _sDAI, address _swapFacet) {
         sDAI = _sDAI;
         swapFacet = _swapFacet;
+    }
+
+    modifier onlySDai(LibSwap.SwapData[] memory _swapData, bool isDeposit) {
+        address assetId;
+        if (isDeposit) {
+            assetId = _swapData[_swapData.length - 1].receivingAssetId;
+        } else {
+            assetId = _swapData[0].sendingAssetId;
+        }
+        if (sDAI != assetId) {
+            revert InvalidAssetId();
+        }
+        _;
     }
 
     function addDex(address _contract) external {
@@ -67,7 +81,7 @@ contract NovaVaultV2 {
     function deposit(
         LibSwap.SwapData[] memory swapData,
         uint16 referral
-    ) external payable returns (bool, uint256) {
+    ) external payable onlySDai(swapData, true) returns (bool, uint256) {
         uint256 prevBalance = IERC20(sDAI).balanceOf(address(this));
 
         _swapTokensGeneric(payable(address(this)), 1, swapData);
@@ -85,7 +99,7 @@ contract NovaVaultV2 {
         uint256 sDaiAmount,
         uint16 referral,
         LibSwap.SwapData[] memory swapData
-    ) external returns (bool) {
+    ) external onlySDai(swapData, false) returns (bool) {
         _swapTokensGeneric(receiver, sDaiAmount, swapData);
 
         emit Referral(referral, receiver, sDaiAmount);
