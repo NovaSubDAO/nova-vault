@@ -1,102 +1,92 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
+import {console} from "forge-std/console.sol";
 import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
 import {LibAllowList} from "lifi/Libraries/LibAllowList.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IUniPool} from "./interfaces/IUniPool.sol";
 
 contract NovaVaultV2 {
     address immutable sDAI;
     address immutable swapFacet;
     event Referral(uint16 referral, address indexed depositor, uint256 amount);
+    error GenericSwapFailed();
 
     constructor(address _sDAI, address _swapFacet) {
         sDAI = _sDAI;
         swapFacet = _swapFacet;
     }
 
-    function addDex(address _dex) external {
-        LibAllowList.addAllowedContract(_dex);
+    function addDex(address _contract) external {
+        LibAllowList.addAllowedContract(_contract);
     }
 
-    function setFunctionApprovalBySignature(bytes4 _signature) external {
-        LibAllowList.addAllowedSelector(_signature);
+    function setFunctionApprovalBySignature(bytes4 _selector) external {
+        LibAllowList.addAllowedSelector(_selector);
     }
 
-    function uniswapV3SwapCallback(int256, int256, bytes calldata) external {}
+    function uniswapV3SwapCallback(
+        int256 amount0Delta,
+        int256 amount1Delta,
+        bytes calldata
+    ) external {
+        IUniPool uniPool = IUniPool(msg.sender);
+        address token0 = uniPool.token0();
+        address token1 = uniPool.token1();
+
+        if (amount0Delta > 0) {
+            IERC20(token0).transfer(msg.sender, uint256(amount0Delta));
+        }
+        if (amount1Delta > 0) {
+            IERC20(token1).transfer(msg.sender, uint256(amount1Delta));
+        }
+    }
 
     function _swapTokensGeneric(
-        bytes32 transactionId,
-        string memory integrator,
-        string memory referrer,
         address payable receiver,
         uint256 minAmount,
         LibSwap.SwapData[] memory swapData
     ) internal {
-        (bool success, bytes memory data) = swapFacet.delegatecall(
+        (bool success, ) = swapFacet.delegatecall(
             abi.encodeWithSignature(
-                "swapTokensGeneric(bytes32, string calldata, string calldata, address payable, uint256, LibSwap.SwapData[] calldata)",
-                transactionId,
-                integrator,
-                referrer,
+                "swapTokensGeneric(bytes32,string,string,address,uint256,(address,address,address,address,uint256,bytes,bool)[])",
+                "",
+                "integrator",
+                "referrer",
                 receiver,
                 minAmount,
                 swapData
             )
         );
-        (bool successDeposit, ) = abi.decode(data, (bool, uint256));
-        require(success && successDeposit, "Deposit failed");
+        if (!success) {
+            revert GenericSwapFailed();
+        }
     }
 
     function deposit(
-        bytes32 transactionId,
-        string memory integrator,
-        string memory referrer,
-        address payable receiver,
-        uint256 assetsAmount,
-        LibSwap.SwapData[] memory swapDataDeposit,
-        uint16 referral,
-        address stable
+        LibSwap.SwapData[] memory swapData,
+        uint16 referral
     ) external payable returns (bool, uint256) {
-        IERC20(stable).transferFrom(msg.sender, address(this), assetsAmount);
-        IERC20(stable).approve(address(this), assetsAmount);
+        uint256 prevBalance = IERC20(sDAI).balanceOf(address(this));
 
-        uint256 prevBalance = IERC20(sDAI).balanceOf(msg.sender);
+        _swapTokensGeneric(payable(address(this)), 1, swapData);
 
-        _swapTokensGeneric(
-            transactionId,
-            integrator,
-            referrer,
-            receiver,
-            assetsAmount,
-            swapDataDeposit
-        );
-
-        uint256 sDaiAmount = IERC20(sDAI).balanceOf(msg.sender) - prevBalance;
+        uint256 sDaiAmount = IERC20(sDAI).balanceOf(address(this)) -
+            prevBalance;
         IERC20(sDAI).transfer(msg.sender, sDaiAmount);
-
-        emit Referral(referral, msg.sender, assetsAmount);
+        emit Referral(referral, msg.sender, sDaiAmount);
 
         return (true, sDaiAmount);
     }
 
     function withdraw(
-        bytes32 transactionId,
-        string memory integrator,
-        string memory referrer,
         address payable receiver,
         uint256 sDaiAmount,
         uint16 referral,
-        LibSwap.SwapData[] memory swapDataWithdraw
+        LibSwap.SwapData[] memory swapData
     ) external returns (bool) {
-        _swapTokensGeneric(
-            transactionId,
-            integrator,
-            referrer,
-            receiver,
-            sDaiAmount,
-            swapDataWithdraw
-        );
+        _swapTokensGeneric(receiver, sDaiAmount, swapData);
 
         emit Referral(referral, receiver, sDaiAmount);
 

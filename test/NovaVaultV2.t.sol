@@ -86,32 +86,8 @@ contract NovaVaultV2Test is Test {
             aliceUnderlyingAmount
         );
 
-        vm.expectEmit(address(vault));
-        emit Referral(111, alice, aliceUnderlyingAmount);
-
-        // vm.prank(alice);
-        // vault.swapTokensGeneric(
-        //     "",
-        //     "integrator",
-        //     "referrer",
-        //     payable(address(vault)),
-        //     aliceUnderlyingAmount,
-        //     swapData
-        // );
-
-        console.log(IERC20(sDAI).balanceOf(address(vault)));
-
         vm.prank(alice);
-        (bool successDeposit, ) = vault.deposit(
-            bytes32(uint256(1)),
-            "Integrator",
-            "Receiver",
-            payable(address(vault)),
-            aliceUnderlyingAmount,
-            swapData,
-            111,
-            underlyingAddress
-        );
+        (bool successDeposit, ) = vault.deposit(swapData, 111);
 
         assert(successDeposit);
     }
