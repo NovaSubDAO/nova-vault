@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {console} from "forge-std/console.sol";
 import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
 import {LibAllowList} from "lifi/Libraries/LibAllowList.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
@@ -95,15 +94,20 @@ contract NovaVaultV2 {
     }
 
     function withdraw(
-        address payable receiver,
-        uint256 sDaiAmount,
         uint16 referral,
         LibSwap.SwapData[] memory swapData
-    ) external onlySDai(swapData, false) returns (bool) {
-        _swapTokensGeneric(receiver, sDaiAmount, swapData);
+    ) external onlySDai(swapData, false) returns (bool, uint256) {
+        address receivedAsset = swapData[0].receivingAssetId;
 
-        emit Referral(referral, receiver, sDaiAmount);
+        uint256 prevBalance = IERC20(receivedAsset).balanceOf(address(this));
 
-        return (true);
+        _swapTokensGeneric(payable(address(this)), 1, swapData);
+
+        uint256 assetAmount = IERC20(receivedAsset).balanceOf(address(this)) -
+            prevBalance;
+        IERC20(receivedAsset).transfer(msg.sender, assetAmount);
+        emit Referral(referral, address(this), assetAmount);
+
+        return (true, assetAmount);
     }
 }

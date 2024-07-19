@@ -41,7 +41,7 @@ contract NovaVaultV2Test is Test {
         vault = new NovaVaultV2(sDAI, address(swapFacet));
     }
 
-    function testNovaVaultV2Deposit() public {
+    function testNovaVaultV2DepositAndWithdraw() public {
         uint256 aliceUnderlyingAmount = 100 * 1e6;
         address alice = address(0xABCD);
 
@@ -87,8 +87,45 @@ contract NovaVaultV2Test is Test {
         );
 
         vm.prank(alice);
-        (bool successDeposit, ) = vault.deposit(swapData, 111);
+        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(
+            swapData,
+            111
+        );
 
         assert(successDeposit);
+        assertEq(sDaiAmount, IERC20(sDAI).balanceOf(alice));
+
+        fromStableTosDai = false;
+        num = fromStableTosDai ? 95 : 105;
+
+        swapData[0] = LibSwap.SwapData(
+            address(veloPool),
+            address(veloPool),
+            sDAI,
+            underlyingAddress,
+            sDaiAmount,
+            abi.encodeWithSelector(
+                veloPool.swap.selector,
+                address(vault),
+                fromStableTosDai,
+                sign * int256(sDaiAmount),
+                (num * sqrtPriceX96) / 100,
+                ""
+            ),
+            true
+        );
+
+        vm.prank(alice);
+        IERC20(sDAI).approve(address(vault), sDaiAmount);
+        assertEq(IERC20(sDAI).allowance(alice, address(vault)), sDaiAmount);
+
+        vm.prank(alice);
+        (bool successWithdraw, uint256 underlyingAmount) = vault.withdraw(
+            111,
+            swapData
+        );
+
+        assert(successWithdraw);
+        assertEq(underlyingAmount, IERC20(underlyingAddress).balanceOf(alice));
     }
 }
