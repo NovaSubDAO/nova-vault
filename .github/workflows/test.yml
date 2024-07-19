@@ -7,7 +7,7 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
-  FORK_BLOCK_NUMBER: 119560377
+  FORK_BLOCK_NUMBER: 122864523
   OPTIMISM_ALCHEMY_KEY: ${{ secrets.OPTIMISM_ALCHEMY_KEY }}
 
 jobs:
@@ -33,7 +33,13 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      - name: Run NovaVault tests
         run: |
-          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER
-        id: test
+          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER --match-path test/NovaVault.t.sol
+          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER --match-path test/NovaAdapterVelo.t.sol
+        id: test-v1
+
+      - name: Run NovaVaultV2 tests
+        run: |
+          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER --match-path test/NovaVaultV2.t.sol
+        id: test-v2

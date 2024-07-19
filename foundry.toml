@@ -4,6 +4,7 @@ out = "out"
 libs = ["lib"]
 remappings = [
     "@solmate=lib/solmate/src",
+    "@lifi=lib/contracts"
 ]
 fs_permissions = [{ access = "read", path = "./"}]
 
