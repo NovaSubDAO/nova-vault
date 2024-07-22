@@ -297,4 +297,92 @@ contract NovaVaultV2Test is Test {
         assert(successWithdraw);
         assertEq(underlyingAmount, IERC20(underlyingAddress).balanceOf(alice));
     }
+
+    function testNovaVaultV2DoubleDeposit() public {
+        bool fromStableTosDai = true;
+        bool isStableFirst = true;
+
+        (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
+        uint160 num = fromStableTosDai ? 95 : 105;
+        int256 sign = isStableFirst ? int256(1) : int256(-1);
+
+        LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](2);
+        swapData[0] = LibSwap.SwapData(
+            address(veloPool),
+            address(veloPool),
+            underlyingAddress,
+            sDAI,
+            aliceUnderlyingAmount,
+            abi.encodeWithSelector(
+                veloPool.swap.selector,
+                address(vault),
+                fromStableTosDai,
+                sign * int256(aliceUnderlyingAmount),
+                (num * sqrtPriceX96) / 100,
+                ""
+            ),
+            true
+        );
+
+        vm.prank(underlyingWhale);
+        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
+
+        vm.prank(alice);
+        IERC20(underlyingAddress).approve(
+            address(vault),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(vault)),
+            aliceUnderlyingAmount
+        );
+
+        vm.prank(alice);
+        (bool successFirstDeposit, uint256 sDaiFirstAmount) = vault.deposit(
+            swapData,
+            111
+        );
+
+        assert(successFirstDeposit);
+        assertEq(sDaiFirstAmount, IERC20(sDAI).balanceOf(alice));
+
+        // swapData[1] = LibSwap.SwapData(
+        //     address(veloPool),
+        //     address(veloPool),
+        //     underlyingAddress,
+        //     sDAI,
+        //     100,
+        //     abi.encodeWithSelector(
+        //         veloPool.swap.selector,
+        //         address(vault),
+        //         fromStableTosDai,
+        //         sign * int256(100),
+        //         (num * sqrtPriceX96) / 100,
+        //         ""
+        //     ),
+        //     true
+        // );
+
+        // vm.prank(underlyingWhale);
+        // IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
+
+        // vm.prank(alice);
+        // IERC20(underlyingAddress).approve(
+        //     address(vault),
+        //     aliceUnderlyingAmount
+        // );
+        // assertEq(
+        //     IERC20(underlyingAddress).allowance(alice, address(vault)),
+        //     aliceUnderlyingAmount
+        // );
+
+        // vm.prank(alice);
+        // (bool successSecondDeposit, uint256 sDaiSecondAmount) = vault.deposit(
+        //     swapData,
+        //     111
+        // );
+
+        // assert(successSecondDeposit);
+        // assertEq(sDaiSecondAmount, IERC20(sDAI).balanceOf(alice));
+    }
 }
