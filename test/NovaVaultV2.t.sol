@@ -4,16 +4,20 @@ pragma solidity ^0.8.13;
 import {Test, console} from "forge-std/Test.sol";
 import {NovaVaultV2} from "../src/NovaVaultV2.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
+import {IVelodromePair} from "../src/interfaces/IVelodromePair.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
 import {GenericSwapFacet} from "@lifi/src/Facets/GenericSwapFacet.sol";
 
 contract NovaVaultV2Test is Test {
     address public POOL = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
+    address public PAIR = 0xe08d427724d8a2673FE0bE3A81b7db17BE835B36;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
+    address public usdt = 0x94b008aA00579c1307B0EF2c499aD98a8ce58e58;
     NovaVaultV2 public vault;
     GenericSwapFacet public swapFacet;
     IVelodromePool veloPool;
+    IVelodromePair veloPair;
     address private veloToken0;
     address private veloToken1;
     address underlyingAddress;
@@ -299,26 +303,37 @@ contract NovaVaultV2Test is Test {
     }
 
     function testNovaVaultV2DoubleDeposit() public {
-        bool fromStableTosDai = true;
-        bool isStableFirst = true;
+        veloPair = IVelodromePair(PAIR);
+        (veloToken0, veloToken1) = veloPair.tokens();
 
-        (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
-        uint160 num = fromStableTosDai ? 95 : 105;
-        int256 sign = isStableFirst ? int256(1) : int256(-1);
+        vault.addDex(address(veloPair));
+        vault.setFunctionApprovalBySignature(veloPair.swap.selector);
+
+        if (veloToken0 == usdt) {
+            underlyingAddress = veloToken1;
+        } else if (veloToken1 == usdt) {
+            underlyingAddress = veloToken0;
+        } else {
+            revert("Velodrome pool should be made of `asset` and `USDT`!");
+        }
+
+        uint256 usdtAmount = veloPair.getAmountOut(
+            aliceUnderlyingAmount,
+            underlyingAddress
+        );
 
         LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](2);
         swapData[0] = LibSwap.SwapData(
-            address(veloPool),
-            address(veloPool),
+            address(veloPair),
+            address(veloPair),
             underlyingAddress,
-            sDAI,
+            usdt,
             aliceUnderlyingAmount,
             abi.encodeWithSelector(
-                veloPool.swap.selector,
+                veloPair.swap.selector,
+                aliceUnderlyingAmount,
+                usdtAmount,
                 address(vault),
-                fromStableTosDai,
-                sign * int256(aliceUnderlyingAmount),
-                (num * sqrtPriceX96) / 100,
                 ""
             ),
             true
@@ -338,51 +353,7 @@ contract NovaVaultV2Test is Test {
         );
 
         vm.prank(alice);
-        (bool successFirstDeposit, uint256 sDaiFirstAmount) = vault.deposit(
-            swapData,
-            111
-        );
-
-        assert(successFirstDeposit);
-        assertEq(sDaiFirstAmount, IERC20(sDAI).balanceOf(alice));
-
-        // swapData[1] = LibSwap.SwapData(
-        //     address(veloPool),
-        //     address(veloPool),
-        //     underlyingAddress,
-        //     sDAI,
-        //     100,
-        //     abi.encodeWithSelector(
-        //         veloPool.swap.selector,
-        //         address(vault),
-        //         fromStableTosDai,
-        //         sign * int256(100),
-        //         (num * sqrtPriceX96) / 100,
-        //         ""
-        //     ),
-        //     true
-        // );
-
-        // vm.prank(underlyingWhale);
-        // IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
-
-        // vm.prank(alice);
-        // IERC20(underlyingAddress).approve(
-        //     address(vault),
-        //     aliceUnderlyingAmount
-        // );
-        // assertEq(
-        //     IERC20(underlyingAddress).allowance(alice, address(vault)),
-        //     aliceUnderlyingAmount
-        // );
-
-        // vm.prank(alice);
-        // (bool successSecondDeposit, uint256 sDaiSecondAmount) = vault.deposit(
-        //     swapData,
-        //     111
-        // );
-
-        // assert(successSecondDeposit);
-        // assertEq(sDaiSecondAmount, IERC20(sDAI).balanceOf(alice));
+        vm.expectRevert(NovaVaultV2.InvalidAssetId.selector);
+        vault.deposit(swapData, 111);
     }
 }
