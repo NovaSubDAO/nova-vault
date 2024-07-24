@@ -13,7 +13,7 @@ contract NovaVaultV2Test is Test {
     address public POOL = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
     address public PAIR = 0xe08d427724d8a2673FE0bE3A81b7db17BE835B36;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
-    address public usdt = 0x94b008aA00579c1307B0EF2c499aD98a8ce58e58;
+    address public usdc = 0x7F5c764cBc14f9669B88837ca1490cCa17c31607;
     NovaVaultV2 public vault;
     GenericSwapFacet public swapFacet;
     IVelodromePool veloPool;
@@ -302,37 +302,37 @@ contract NovaVaultV2Test is Test {
         assertEq(underlyingAmount, IERC20(underlyingAddress).balanceOf(alice));
     }
 
-    function testNovaVaultV2DoubleDeposit() public {
+    function testNovaVaultV2DepositFails() public {
         veloPair = IVelodromePair(PAIR);
         (veloToken0, veloToken1) = veloPair.tokens();
 
         vault.addDex(address(veloPair));
         vault.setFunctionApprovalBySignature(veloPair.swap.selector);
 
-        if (veloToken0 == usdt) {
+        if (veloToken0 == usdc) {
             underlyingAddress = veloToken1;
-        } else if (veloToken1 == usdt) {
+        } else if (veloToken1 == usdc) {
             underlyingAddress = veloToken0;
         } else {
             revert("Velodrome pool should be made of `asset` and `USDT`!");
         }
 
-        uint256 usdtAmount = veloPair.getAmountOut(
+        uint256 usdcAmount = veloPair.getAmountOut(
             aliceUnderlyingAmount,
             underlyingAddress
         );
 
-        LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](2);
+        LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](1);
         swapData[0] = LibSwap.SwapData(
             address(veloPair),
             address(veloPair),
             underlyingAddress,
-            usdt,
+            usdc,
             aliceUnderlyingAmount,
             abi.encodeWithSelector(
                 veloPair.swap.selector,
                 aliceUnderlyingAmount,
-                usdtAmount,
+                usdcAmount,
                 address(vault),
                 ""
             ),
@@ -355,5 +355,89 @@ contract NovaVaultV2Test is Test {
         vm.prank(alice);
         vm.expectRevert(NovaVaultV2.InvalidAssetId.selector);
         vault.deposit(swapData, 111);
+    }
+
+    function testDoubleDeposit() public {
+        veloPair = IVelodromePair(PAIR);
+        (veloToken0, veloToken1) = veloPair.tokens();
+
+        vault.addDex(address(veloPair));
+        vault.setFunctionApprovalBySignature(veloPair.swap.selector);
+
+        if (veloToken0 == usdc) {
+            underlyingAddress = veloToken1;
+        } else if (veloToken1 == usdc) {
+            underlyingAddress = veloToken0;
+        } else {
+            revert("Velodrome pool should be made of `asset` and `USDT`!");
+        }
+
+        uint256 usdcAmount = veloPair.getAmountOut(
+            aliceUnderlyingAmount,
+            underlyingAddress
+        );
+
+        LibSwap.SwapData[] memory swapData = new LibSwap.SwapData[](2);
+        swapData[0] = LibSwap.SwapData(
+            address(veloPair),
+            address(veloPair),
+            underlyingAddress,
+            usdc,
+            aliceUnderlyingAmount,
+            abi.encodeWithSelector(
+                veloPair.swap.selector,
+                aliceUnderlyingAmount,
+                usdcAmount,
+                address(vault),
+                ""
+            ),
+            true
+        );
+
+        bool fromStableTosDai = true;
+        bool isStableFirst = true;
+
+        (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
+        uint160 num = fromStableTosDai ? 95 : 105;
+        int256 sign = isStableFirst ? int256(1) : int256(-1);
+
+        swapData[1] = LibSwap.SwapData(
+            address(veloPool),
+            address(veloPool),
+            underlyingAddress,
+            sDAI,
+            usdcAmount,
+            abi.encodeWithSelector(
+                veloPool.swap.selector,
+                address(vault),
+                fromStableTosDai,
+                sign * int256(usdcAmount),
+                (num * sqrtPriceX96) / 100,
+                ""
+            ),
+            true
+        );
+
+        vm.prank(underlyingWhale);
+        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
+
+        vm.prank(alice);
+        IERC20(underlyingAddress).approve(
+            address(vault),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(vault)),
+            aliceUnderlyingAmount
+        );
+
+        vm.prank(alice);
+        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(
+            swapData,
+            111
+        );
+
+        assert(successDeposit);
+        assertEq(sDaiAmount, IERC20(sDAI).balanceOf(alice));
     }
 }
