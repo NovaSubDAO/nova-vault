@@ -333,7 +333,7 @@ contract NovaVaultV2Test is Test {
                 veloPair.swap.selector,
                 aliceUnderlyingAmount,
                 usdcAmount,
-                address(vault),
+                address(veloPair),
                 ""
             ),
             true
@@ -372,7 +372,7 @@ contract NovaVaultV2Test is Test {
             revert("Velodrome pool should be made of `asset` and `USDT`!");
         }
 
-        uint256 usdcAmount = veloPair.getAmountOut(
+        uint usdcAmount = veloPair.getAmountOut(
             aliceUnderlyingAmount,
             underlyingAddress
         );
@@ -386,8 +386,8 @@ contract NovaVaultV2Test is Test {
             aliceUnderlyingAmount,
             abi.encodeWithSelector(
                 veloPair.swap.selector,
-                aliceUnderlyingAmount,
                 usdcAmount,
+                0,
                 address(vault),
                 ""
             ),
@@ -404,7 +404,7 @@ contract NovaVaultV2Test is Test {
         swapData[1] = LibSwap.SwapData(
             address(veloPool),
             address(veloPool),
-            underlyingAddress,
+            usdc,
             sDAI,
             usdcAmount,
             abi.encodeWithSelector(
@@ -415,11 +415,17 @@ contract NovaVaultV2Test is Test {
                 (num * sqrtPriceX96) / 100,
                 ""
             ),
-            true
+            false
         );
 
         vm.prank(underlyingWhale);
         IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
+
+        vm.prank(underlyingWhale);
+        IERC20(underlyingAddress).transfer(
+            address(vault),
+            aliceUnderlyingAmount
+        );
 
         vm.prank(alice);
         IERC20(underlyingAddress).approve(
@@ -428,6 +434,24 @@ contract NovaVaultV2Test is Test {
         );
         assertEq(
             IERC20(underlyingAddress).allowance(alice, address(vault)),
+            aliceUnderlyingAmount
+        );
+
+        vm.prank(address(vault));
+        IERC20(underlyingAddress).approve(
+            address(veloPair),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(
+                address(vault),
+                address(veloPair)
+            ),
+            aliceUnderlyingAmount
+        );
+        vm.prank(address(vault));
+        IERC20(underlyingAddress).transfer(
+            address(veloPair),
             aliceUnderlyingAmount
         );
 
