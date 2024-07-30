@@ -302,7 +302,7 @@ contract NovaVaultV2Test is Test {
     }
 
     function testDoubleDepositShouldWork() public {
-        veloPool_2 = IVelodromePool(USDT_USDC_POOL);
+        veloPool_2 = IVelodromePool(USDC_USDT_POOL);
 
         veloToken0 = veloPool_2.token0();
         veloToken1 = veloPool_2.token1();
@@ -394,7 +394,7 @@ contract NovaVaultV2Test is Test {
     }
 
     function testNovaVaultV2DepositFails() public {
-        veloPool_2 = IVelodromePool(USDT_USDC_POOL);
+        veloPool_2 = IVelodromePool(USDC_USDT_POOL);
 
         veloToken0 = veloPool_2.token0();
         veloToken1 = veloPool_2.token1();
