@@ -9,8 +9,10 @@ import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
 import {GenericSwapFacet} from "@lifi/src/Facets/GenericSwapFacet.sol";
 
 contract NovaVaultV2Test is Test {
-    address public USDC_SDAI_POOL = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
-    address public USDC_USDT_POOL = 0x84Ce89B4f6F67E523A81A82f9f2F14D84B726F6B;
+    address public veloPoolUsdcSDai =
+        0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
+    address public veloPoolUsdcUsdt =
+        0x84Ce89B4f6F67E523A81A82f9f2F14D84B726F6B;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
     address public usdc = 0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85;
     NovaVaultV2 public vault;
@@ -30,7 +32,7 @@ contract NovaVaultV2Test is Test {
     address public underlyingWhale = 0xacD03D601e5bB1B275Bb94076fF46ED9D753435A;
 
     function setUp() public {
-        veloPool = IVelodromePool(USDC_SDAI_POOL);
+        veloPool = IVelodromePool(veloPoolUsdcSDai);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
@@ -302,7 +304,7 @@ contract NovaVaultV2Test is Test {
     }
 
     function testDoubleDepositShouldWork() public {
-        veloPool_2 = IVelodromePool(USDC_USDT_POOL);
+        veloPool_2 = IVelodromePool(veloPoolUsdcUsdt);
 
         veloToken0 = veloPool_2.token0();
         veloToken1 = veloPool_2.token1();
@@ -312,7 +314,7 @@ contract NovaVaultV2Test is Test {
         } else if (veloToken1 == usdc) {
             underlyingAddress = veloToken0;
         } else {
-            revert("Velodrome pool should be made of `asset` and `sDAI`!");
+            revert("Velodrome pool should be made of 'USDC' and 'USDT'!");
         }
 
         vault.addDex(address(veloPool_2));
@@ -394,7 +396,7 @@ contract NovaVaultV2Test is Test {
     }
 
     function testNovaVaultV2DepositFails() public {
-        veloPool_2 = IVelodromePool(USDC_USDT_POOL);
+        veloPool_2 = IVelodromePool(veloPoolUsdcUsdt);
 
         veloToken0 = veloPool_2.token0();
         veloToken1 = veloPool_2.token1();
