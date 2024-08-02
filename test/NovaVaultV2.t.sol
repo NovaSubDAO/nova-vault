@@ -352,21 +352,23 @@ contract NovaVaultV2Test is Test {
         num = fromStableTosDai ? 95 : 105;
         sign = isStableFirst ? int256(1) : int256(-1);
 
+        bytes memory secondSwapCallData = abi.encodeWithSelector(
+            veloPool.swap.selector,
+            address(vault),
+            fromStableTosDai,
+            sign * int256(aliceUnderlyingAmount - 10000), //To change !
+            (num * sqrtPriceX96) / 100,
+            ""
+        );
+
         swapData[1] = LibSwap.SwapData(
             address(veloPool),
             address(veloPool),
             usdc,
             sDAI,
             aliceUnderlyingAmount - 10000, //To change !
-            abi.encodeWithSelector(
-                veloPool.swap.selector,
-                address(vault),
-                fromStableTosDai,
-                sign * int256(aliceUnderlyingAmount - 10000), //To change !
-                (num * sqrtPriceX96) / 100,
-                ""
-            ),
-            false
+            secondSwapCallData,
+            true
         );
 
         vm.prank(underlyingWhale);
@@ -383,8 +385,9 @@ contract NovaVaultV2Test is Test {
         );
 
         vm.prank(alice);
-        (bool successDeposit, uint256 sDaiAmount) = vault.deposit(
+        (bool successDeposit, uint256 sDaiAmount) = vault.sequentialSwap(
             swapData,
+            secondSwapCallData,
             111
         );
 

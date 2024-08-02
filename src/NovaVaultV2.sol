@@ -110,4 +110,60 @@ contract NovaVaultV2 {
 
         return (true, assetAmount);
     }
+
+    function sequentialSwap(
+        LibSwap.SwapData[] memory swapData,
+        bytes memory callData,
+        uint16 referral
+    ) public onlySDai(swapData, true) returns (bool, uint256) {
+        require(
+            swapData[0].receivingAssetId == swapData[1].sendingAssetId,
+            "invalid asset"
+        );
+
+        address asset = swapData[0].receivingAssetId;
+
+        LibSwap.SwapData[] memory swapSequentially = new LibSwap.SwapData[](1);
+        swapSequentially[0] = swapData[0];
+
+        uint256 prevBalance = IERC20(asset).balanceOf(address(this));
+        _swapTokensGeneric(payable(address(this)), 1, swapSequentially);
+        uint256 receivedAmount = IERC20(asset).balanceOf(address(this)) -
+            prevBalance;
+
+        (
+            bytes4 selector,
+            address recipient,
+            bool zeroForOne,
+            int256 amountSpecified,
+            uint160 sqrtPriceLimitX96,
+            bytes memory swapCallData
+        ) = abi.decode(
+                callData,
+                (bytes4, address, bool, int256, uint160, bytes)
+            );
+
+        amountSpecified = -1 * int256(receivedAmount);
+        callData = abi.encodeWithSelector(
+            selector,
+            recipient,
+            zeroForOne,
+            amountSpecified,
+            sqrtPriceLimitX96,
+            swapCallData
+        );
+        swapData[1].callData = callData;
+
+        swapSequentially[0] = swapData[1];
+
+        prevBalance = IERC20(sDAI).balanceOf(address(this));
+        _swapTokensGeneric(payable(address(this)), 1, swapSequentially);
+        uint256 sDaiAmount = IERC20(sDAI).balanceOf(address(this)) -
+            prevBalance;
+
+        IERC20(sDAI).transfer(msg.sender, sDaiAmount);
+        emit Referral(referral, msg.sender, sDaiAmount);
+
+        return (true, sDaiAmount);
+    }
 }
