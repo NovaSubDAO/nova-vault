@@ -63,7 +63,7 @@ contract Deploy is Script {
 
         swapFacet = new GenericSwapFacet();
 
-        vaultV2 = new NovaVaultV2(sDAI, address(swapFacet));
+        vaultV2 = new NovaVaultV2(sDAI, address(swapFacet), msg.sender);
         console.log("NovaVault address is ", address(vault));
 
         vm.stopBroadcast();

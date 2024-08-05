@@ -5,17 +5,31 @@ import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
 import {LibAllowList} from "lifi/Libraries/LibAllowList.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IUniPool} from "./interfaces/IUniPool.sol";
+import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
 
-contract NovaVaultV2 {
+contract NovaVaultV2 is ReentrancyGuard {
     address immutable sDAI;
     address immutable swapFacet;
-    event Referral(uint16 referral, address indexed depositor, uint256 amount);
+    address private owner;
+
     error GenericSwapFailed();
     error InvalidAssetId(address assetId);
+    error NotTheOwner();
+    error InvalidAddress();
+    error DexContractNotAllowed(address);
+    event Referral(uint16 referral, address indexed depositor, uint256 amount);
 
-    constructor(address _sDAI, address _swapFacet) {
+    constructor(address _sDAI, address _swapFacet, address _owner) {
         sDAI = _sDAI;
         swapFacet = _swapFacet;
+        owner = _owner;
+    }
+
+    modifier onlyOwner() {
+        if (msg.sender != owner) {
+            revert NotTheOwner();
+        }
+        _;
     }
 
     modifier onlySDai(LibSwap.SwapData[] memory _swapData, bool isDeposit) {
@@ -31,11 +45,20 @@ contract NovaVaultV2 {
         _;
     }
 
-    function addDex(address _contract) external {
+    modifier onlyAllowedDexContracts() {
+        if (!LibAllowList.contractIsAllowed(msg.sender)) {
+            revert DexContractNotAllowed(msg.sender);
+        }
+        _;
+    }
+
+    function addDex(address _contract) external onlyOwner {
         LibAllowList.addAllowedContract(_contract);
     }
 
-    function setFunctionApprovalBySignature(bytes4 _selector) external {
+    function setFunctionApprovalBySignature(
+        bytes4 _selector
+    ) external onlyOwner {
         LibAllowList.addAllowedSelector(_selector);
     }
 
@@ -43,7 +66,7 @@ contract NovaVaultV2 {
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata
-    ) external {
+    ) external onlyAllowedDexContracts {
         IUniPool uniPool = IUniPool(msg.sender);
         address token0 = uniPool.token0();
         address token1 = uniPool.token1();
@@ -54,6 +77,46 @@ contract NovaVaultV2 {
         if (amount1Delta > 0) {
             IERC20(token1).transfer(msg.sender, uint256(amount1Delta));
         }
+    }
+
+    function deposit(
+        LibSwap.SwapData[] memory swapData,
+        uint16 referral
+    )
+        external
+        payable
+        nonReentrant
+        onlySDai(swapData, true)
+        returns (bool, uint256)
+    {
+        uint256 prevBalance = IERC20(sDAI).balanceOf(address(this));
+
+        _swapTokensGeneric(payable(address(this)), 1, swapData);
+
+        uint256 sDaiAmount = IERC20(sDAI).balanceOf(address(this)) -
+            prevBalance;
+        IERC20(sDAI).transfer(msg.sender, sDaiAmount);
+        emit Referral(referral, msg.sender, sDaiAmount);
+
+        return (true, sDaiAmount);
+    }
+
+    function withdraw(
+        uint16 referral,
+        LibSwap.SwapData[] memory swapData
+    ) external nonReentrant onlySDai(swapData, false) returns (bool, uint256) {
+        address receivedAsset = swapData[0].receivingAssetId;
+
+        uint256 prevBalance = IERC20(receivedAsset).balanceOf(address(this));
+
+        _swapTokensGeneric(payable(address(this)), 1, swapData);
+
+        uint256 assetAmount = IERC20(receivedAsset).balanceOf(address(this)) -
+            prevBalance;
+        IERC20(receivedAsset).transfer(msg.sender, assetAmount);
+        emit Referral(referral, address(this), assetAmount);
+
+        return (true, assetAmount);
     }
 
     function _swapTokensGeneric(
@@ -77,37 +140,18 @@ contract NovaVaultV2 {
         }
     }
 
-    function deposit(
-        LibSwap.SwapData[] memory swapData,
-        uint16 referral
-    ) external payable onlySDai(swapData, true) returns (bool, uint256) {
-        uint256 prevBalance = IERC20(sDAI).balanceOf(address(this));
-
-        _swapTokensGeneric(payable(address(this)), 1, swapData);
-
-        uint256 sDaiAmount = IERC20(sDAI).balanceOf(address(this)) -
-            prevBalance;
-        IERC20(sDAI).transfer(msg.sender, sDaiAmount);
-        emit Referral(referral, msg.sender, sDaiAmount);
-
-        return (true, sDaiAmount);
+    function transferOwnership(address _newOwner) external onlyOwner {
+        if (
+            _newOwner == address(0) ||
+            _newOwner == address(this) ||
+            _newOwner == owner
+        ) {
+            revert InvalidAddress();
+        }
+        owner = _newOwner;
     }
 
-    function withdraw(
-        uint16 referral,
-        LibSwap.SwapData[] memory swapData
-    ) external onlySDai(swapData, false) returns (bool, uint256) {
-        address receivedAsset = swapData[0].receivingAssetId;
-
-        uint256 prevBalance = IERC20(receivedAsset).balanceOf(address(this));
-
-        _swapTokensGeneric(payable(address(this)), 1, swapData);
-
-        uint256 assetAmount = IERC20(receivedAsset).balanceOf(address(this)) -
-            prevBalance;
-        IERC20(receivedAsset).transfer(msg.sender, assetAmount);
-        emit Referral(referral, address(this), assetAmount);
-
-        return (true, assetAmount);
+    function getOwner() external view returns (address) {
+        return owner;
     }
 }
