@@ -14,20 +14,25 @@ contract NovaVaultV2 is ReentrancyGuard {
 
     error GenericSwapFailed();
     error InvalidAssetId(address assetId);
-    error NotTheOwner();
-    error InvalidAddress();
+    error NotTheOwner(address);
+    error InvalidAddress(address);
     error DexContractNotAllowed(address);
     event Referral(uint16 referral, address indexed depositor, uint256 amount);
 
-    constructor(address _sDAI, address _swapFacet, address _owner) {
-        sDAI = _sDAI;
-        swapFacet = _swapFacet;
-        owner = _owner;
-    }
-
     modifier onlyOwner() {
         if (msg.sender != owner) {
-            revert NotTheOwner();
+            revert NotTheOwner(msg.sender);
+        }
+        _;
+    }
+
+    modifier validOwner(address _newOwner) {
+        if (
+            _newOwner == address(0) ||
+            _newOwner == address(this) ||
+            _newOwner == owner
+        ) {
+            revert InvalidAddress(_newOwner);
         }
         _;
     }
@@ -50,6 +55,16 @@ contract NovaVaultV2 is ReentrancyGuard {
             revert DexContractNotAllowed(msg.sender);
         }
         _;
+    }
+
+    constructor(
+        address _sDAI,
+        address _swapFacet,
+        address _owner
+    ) validOwner(_owner) {
+        sDAI = _sDAI;
+        swapFacet = _swapFacet;
+        owner = _owner;
     }
 
     function addDex(address _contract) external onlyOwner {
@@ -140,14 +155,9 @@ contract NovaVaultV2 is ReentrancyGuard {
         }
     }
 
-    function transferOwnership(address _newOwner) external onlyOwner {
-        if (
-            _newOwner == address(0) ||
-            _newOwner == address(this) ||
-            _newOwner == owner
-        ) {
-            revert InvalidAddress();
-        }
+    function transferOwnership(
+        address _newOwner
+    ) public onlyOwner validOwner(_newOwner) {
         owner = _newOwner;
     }
 

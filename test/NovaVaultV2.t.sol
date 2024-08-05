@@ -361,19 +361,19 @@ contract NovaVaultV2Test is Test {
 
         vm.prank(alice);
         vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector)
+            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector, alice)
         );
         vault.addDex(address(veloPool_2));
 
         vm.prank(alice);
         vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector)
+            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector, alice)
         );
         vault.setFunctionApprovalBySignature(veloPool_2.swap.selector);
 
         vm.prank(alice);
         vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector)
+            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector, alice)
         );
         vault.transferOwnership(alice);
     }
@@ -382,17 +382,23 @@ contract NovaVaultV2Test is Test {
         address owner = vault.getOwner();
 
         vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.InvalidAddress.selector)
+            abi.encodeWithSelector(
+                NovaVaultV2.InvalidAddress.selector,
+                address(0)
+            )
         );
         vault.transferOwnership(address(0));
 
         vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.InvalidAddress.selector)
+            abi.encodeWithSelector(
+                NovaVaultV2.InvalidAddress.selector,
+                address(vault)
+            )
         );
         vault.transferOwnership(address(vault));
 
         vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.InvalidAddress.selector)
+            abi.encodeWithSelector(NovaVaultV2.InvalidAddress.selector, owner)
         );
         vault.transferOwnership(owner);
     }
