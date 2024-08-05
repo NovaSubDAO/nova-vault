@@ -11,7 +11,7 @@ contract NovaVaultV2 {
     address immutable swapFacet;
     event Referral(uint16 referral, address indexed depositor, uint256 amount);
     error GenericSwapFailed();
-    error InvalidAssetId();
+    error InvalidAssetId(address assetId);
 
     constructor(address _sDAI, address _swapFacet) {
         sDAI = _sDAI;
@@ -26,7 +26,7 @@ contract NovaVaultV2 {
             assetId = _swapData[0].sendingAssetId;
         }
         if (sDAI != assetId) {
-            revert InvalidAssetId();
+            revert InvalidAssetId(assetId);
         }
         _;
     }
