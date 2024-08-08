@@ -29,7 +29,7 @@ contract NovaVaultV2 is ReentrancyGuard, Ownable {
         _;
     }
 
-    modifier onlyAllowedDexContracts() {
+    modifier onlyAllowedContracts() {
         if (!LibAllowList.contractIsAllowed(msg.sender)) {
             revert ContractNotAllowed(msg.sender);
         }
@@ -55,7 +55,7 @@ contract NovaVaultV2 is ReentrancyGuard, Ownable {
         int256 amount0Delta,
         int256 amount1Delta,
         bytes calldata
-    ) external onlyAllowedDexContracts {
+    ) external onlyAllowedContracts {
         IUniPool uniPool = IUniPool(msg.sender);
         address token0 = uniPool.token0();
         address token1 = uniPool.token1();
