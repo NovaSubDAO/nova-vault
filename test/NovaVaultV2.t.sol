@@ -288,7 +288,12 @@ contract NovaVaultV2Test is Test {
         assertEq(underlyingAmount, IERC20(underlyingAddress).balanceOf(alice));
     }
 
-    function testNovaVaultV2DepositShouldFail()
+    function testTransferOwnership() public {
+        vault.transferOwnership(alice);
+        assertEq(vault.owner(), alice);
+    }
+
+    function testNovaVaultV2DepositShouldFailBecauseAssetIsNotSDai()
         public
         transferAndApproveUnderlying
     {
@@ -302,7 +307,7 @@ contract NovaVaultV2Test is Test {
         } else if (veloToken1 == usdc) {
             underlyingAddress = veloToken0;
         } else {
-            revert("Velodrome pool should be made of `asset` and `sDAI`!");
+            revert("Velodrome pool should be made of `USDC` and `USDT`!");
         }
 
         vault.addDex(address(veloPool_2));
@@ -338,5 +343,37 @@ contract NovaVaultV2Test is Test {
             abi.encodeWithSelector(NovaVaultV2.InvalidAssetId.selector, usdc)
         );
         vault.deposit(swapData, 111);
+    }
+
+    function testShouldFailBecauseCallerIsNotOwner() public {
+        veloPool_2 = IVelodromePool(veloPoolUsdcUsdt);
+
+        veloToken0 = veloPool_2.token0();
+        veloToken1 = veloPool_2.token1();
+
+        if (veloToken0 == usdc) {
+            underlyingAddress = veloToken1;
+        } else if (veloToken1 == usdc) {
+            underlyingAddress = veloToken0;
+        } else {
+            revert("Velodrome pool should be made of `USDC` and `USDT`!");
+        }
+
+        vm.prank(alice);
+        vm.expectRevert();
+        vault.addDex(address(veloPool_2));
+
+        vm.prank(alice);
+        vm.expectRevert();
+        vault.setFunctionApprovalBySignature(veloPool_2.swap.selector);
+
+        vm.prank(alice);
+        vm.expectRevert();
+        vault.transferOwnership(alice);
+    }
+
+    function testTransferOwnershipShouldFailBecauseInvalidAddress() public {
+        vm.expectRevert();
+        vault.transferOwnership(address(0));
     }
 }
