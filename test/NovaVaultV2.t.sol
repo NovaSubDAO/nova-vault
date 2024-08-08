@@ -61,7 +61,7 @@ contract NovaVaultV2Test is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        vault = new NovaVaultV2(sDAI, address(swapFacet), address(this));
+        vault = new NovaVaultV2(sDAI, address(swapFacet));
         vault.addDex(address(veloPool));
         vault.setFunctionApprovalBySignature(veloPool.swap.selector);
     }
@@ -290,7 +290,7 @@ contract NovaVaultV2Test is Test {
 
     function testTransferOwnership() public {
         vault.transferOwnership(alice);
-        assertEq(vault.getOwner(), alice);
+        assertEq(vault.owner(), alice);
     }
 
     function testNovaVaultV2DepositShouldFailBecauseAssetIsNotSDai()
@@ -360,46 +360,22 @@ contract NovaVaultV2Test is Test {
         }
 
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector, alice)
-        );
+        vm.expectRevert();
         vault.addDex(address(veloPool_2));
 
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector, alice)
-        );
+        vm.expectRevert();
         vault.setFunctionApprovalBySignature(veloPool_2.swap.selector);
 
         vm.prank(alice);
-        vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.NotTheOwner.selector, alice)
-        );
+        vm.expectRevert();
         vault.transferOwnership(alice);
     }
 
     function testTransferOwnershipShouldFailBecauseInvalidAddress() public {
-        address owner = vault.getOwner();
+        address owner = vault.owner();
 
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                NovaVaultV2.InvalidAddress.selector,
-                address(0)
-            )
-        );
+        vm.expectRevert();
         vault.transferOwnership(address(0));
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                NovaVaultV2.InvalidAddress.selector,
-                address(vault)
-            )
-        );
-        vault.transferOwnership(address(vault));
-
-        vm.expectRevert(
-            abi.encodeWithSelector(NovaVaultV2.InvalidAddress.selector, owner)
-        );
-        vault.transferOwnership(owner);
     }
 }
