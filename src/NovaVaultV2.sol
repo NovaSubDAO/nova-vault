@@ -13,7 +13,7 @@ contract NovaVaultV2 is ReentrancyGuard, Ownable {
     address immutable swapFacet;
     error GenericSwapFailed();
     error InvalidAssetId(address assetId);
-    error DexContractNotAllowed(address);
+    error ContractNotAllowed(address);
     event Referral(uint16 referral, address indexed depositor, uint256 amount);
 
     modifier onlySDai(LibSwap.SwapData[] memory _swapData, bool isDeposit) {
@@ -31,7 +31,7 @@ contract NovaVaultV2 is ReentrancyGuard, Ownable {
 
     modifier onlyAllowedDexContracts() {
         if (!LibAllowList.contractIsAllowed(msg.sender)) {
-            revert DexContractNotAllowed(msg.sender);
+            revert ContractNotAllowed(msg.sender);
         }
         _;
     }
@@ -127,9 +127,5 @@ contract NovaVaultV2 is ReentrancyGuard, Ownable {
         if (!success) {
             revert GenericSwapFailed();
         }
-    }
-
-    function transferOwnership(address _newOwner) public override onlyOwner {
-        super.transferOwnership(_newOwner);
     }
 }

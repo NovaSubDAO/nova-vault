@@ -373,8 +373,6 @@ contract NovaVaultV2Test is Test {
     }
 
     function testTransferOwnershipShouldFailBecauseInvalidAddress() public {
-        address owner = vault.owner();
-
         vm.expectRevert();
         vault.transferOwnership(address(0));
     }
