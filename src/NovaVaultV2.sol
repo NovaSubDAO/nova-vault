@@ -115,13 +115,13 @@ contract NovaVaultV2 is ReentrancyGuard, Ownable {
     ) internal {
         (bool success, ) = swapFacet.delegatecall(
             abi.encodeWithSignature(
-                "swapTokensSingleV3ERC20ToERC20(bytes32,string,string,address,uint256,(address,address,address,address,uint256,bytes,bool))",
+                "swapTokensMultipleV3ERC20ToERC20(bytes32,string,string,address,uint256,(address,address,address,address,uint256,bytes,bool)[])",
                 "",
                 "integrator",
                 "referrer",
                 receiver,
                 minAmount,
-                swapData[0]
+                swapData
             )
         );
         if (!success) {
