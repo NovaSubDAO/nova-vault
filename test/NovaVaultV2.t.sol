@@ -6,7 +6,7 @@ import {NovaVaultV2} from "../src/NovaVaultV2.sol";
 import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
-import {GenericSwapFacet} from "@lifi/src/Facets/GenericSwapFacet.sol";
+import {GenericSwapFacetV3} from "@lifi/src/Facets/GenericSwapFacetV3.sol";
 
 contract NovaVaultV2Test is Test {
     address public veloPoolUsdcSDai =
@@ -16,7 +16,7 @@ contract NovaVaultV2Test is Test {
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
     address public usdc = 0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85;
     NovaVaultV2 public vault;
-    GenericSwapFacet public swapFacet;
+    GenericSwapFacetV3 public swapFacet;
     IVelodromePool veloPool;
     IVelodromePool veloPool_2;
     address private veloToken0;
@@ -51,7 +51,7 @@ contract NovaVaultV2Test is Test {
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
-        swapFacet = new GenericSwapFacet();
+        swapFacet = new GenericSwapFacetV3();
 
         if (veloToken0 == sDAI) {
             underlyingAddress = veloToken1;
