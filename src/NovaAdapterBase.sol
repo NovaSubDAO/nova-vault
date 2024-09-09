@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.17;
 
-import {IERC20} from "./interfaces/IERC20.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
 abstract contract NovaAdapterBase {
-    error TransferFailed(address sender, address recipient, uint256 amount);
+    using SafeTransferLib for ERC20;
 
     address immutable sDAI;
     address immutable asset;
@@ -15,40 +16,21 @@ abstract contract NovaAdapterBase {
     }
 
     function deposit(uint256 assets) external returns (bool, uint256) {
-        bool successFirst = IERC20(asset).transferFrom(
-            msg.sender,
-            address(this),
-            assets
-        );
+        ERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
 
         (, int256 sDaiOut) = _swap(int256(assets), true);
         uint256 sDaiToTransfer = uint256(-sDaiOut);
-        bool successSecond = IERC20(sDAI).transfer(msg.sender, sDaiToTransfer);
-
-        if (!successFirst || !successSecond) {
-            revert TransferFailed(msg.sender, address(this), assets);
-        }
+        ERC20(sDAI).safeTransfer(msg.sender, sDaiToTransfer);
 
         return (true, sDaiToTransfer);
     }
 
     function withdraw(uint256 shares) external returns (bool, uint256) {
-        bool successFirst = IERC20(sDAI).transferFrom(
-            msg.sender,
-            address(this),
-            shares
-        );
+        ERC20(sDAI).safeTransferFrom(msg.sender, address(this), shares);
 
         (int256 assets, ) = _swap(int256(shares), false);
         uint256 assetsToTransfer = uint256(-assets);
-        bool successSecond = IERC20(asset).transfer(
-            msg.sender,
-            assetsToTransfer
-        );
-
-        if (!successFirst || !successSecond) {
-            revert TransferFailed(msg.sender, address(this), assetsToTransfer);
-        }
+        ERC20(asset).safeTransfer(msg.sender, assetsToTransfer);
 
         return (true, assetsToTransfer);
     }

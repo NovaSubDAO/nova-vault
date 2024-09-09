@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.17;
 
 import {Test, console} from "forge-std/Test.sol";
 import {NovaVault} from "../src/NovaVault.sol";
@@ -62,7 +62,7 @@ contract NovaVaultTest is Test {
         vm.expectEmit(address(vault));
         emit Referral(111, alice, aliceUnderlyingAmount);
 
-        vm.prank(alice);
+        vm.startPrank(alice);
         (bool successDeposit, uint256 sDaiAmount) = vault.deposit(
             underlyingAddress,
             aliceUnderlyingAmount,
@@ -73,18 +73,21 @@ contract NovaVaultTest is Test {
         assertEq(IERC20(underlyingAddress).balanceOf(alice), 0);
         assertEq(IERC20(sDAI).balanceOf(alice), sDaiAmount);
 
-        vm.prank(alice);
         IERC20(sDAI).approve(address(vault), sDaiAmount);
         assertEq(IERC20(sDAI).allowance(alice, address(vault)), sDaiAmount);
 
-        vm.prank(alice);
+        vm.expectEmit(address(vault));
+        emit Referral(111, alice, sDaiAmount);
+
         (bool successWithdraw, uint256 assetsAmount) = vault.withdraw(
             underlyingAddress,
-            sDaiAmount
+            sDaiAmount,
+            111
         );
         assert(successWithdraw);
         assertEq(IERC20(sDAI).allowance(alice, address(vault)), 0);
         assertEq(IERC20(sDAI).balanceOf(alice), 0);
         assertEq(IERC20(underlyingAddress).balanceOf(alice), assetsAmount);
+        vm.stopPrank();
     }
 }
