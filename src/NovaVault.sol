@@ -14,9 +14,16 @@ contract NovaVault is INovaVault, ReentrancyGuard {
     mapping(address => address) public _novaAdapters;
     address immutable sDAI;
 
-    modifier isAddressZero(address asset) {
+    modifier onlyNonZero(address asset) {
         if (asset == address(0)) {
             revert Errors.INVALID_ADDRESS();
+        }
+        _;
+    }
+
+    modifier onlyApprovedAdapter(address stable) {
+        if (_novaAdapters[stable] == address(0)) {
+            revert Errors.NO_ADAPTER_APPROVED();
         }
         _;
     }
@@ -24,7 +31,7 @@ contract NovaVault is INovaVault, ReentrancyGuard {
         address _sDAI,
         address[] memory stables,
         address[] memory novaAdapters
-    ) isAddressZero(_sDAI) {
+    ) onlyNonZero(_sDAI) {
         sDAI = _sDAI;
         _approveNovaAdapters(stables, novaAdapters);
     }
@@ -45,7 +52,7 @@ contract NovaVault is INovaVault, ReentrancyGuard {
     function _approveAdapter(
         address stable,
         address adapter
-    ) internal isAddressZero(stable) {
+    ) internal onlyNonZero(stable) {
         if (_novaAdapters[stable] != address(0)) {
             revert Errors.ADAPTER_ALREADY_APPROVED();
         }
@@ -63,11 +70,13 @@ contract NovaVault is INovaVault, ReentrancyGuard {
         address stable,
         uint256 assets,
         uint16 referral
-    ) external nonReentrant returns (bool, uint256) {
+    )
+        external
+        onlyApprovedAdapter(stable)
+        nonReentrant
+        returns (bool, uint256)
+    {
         address adapter = _novaAdapters[stable];
-        if (adapter == address(0)) {
-            revert Errors.NO_ADAPTER_APPROVED();
-        }
 
         ERC20(stable).safeTransferFrom(msg.sender, address(this), assets);
         ERC20(stable).safeApprove(adapter, assets);
@@ -91,11 +100,13 @@ contract NovaVault is INovaVault, ReentrancyGuard {
         address stable,
         uint256 shares,
         uint16 referral
-    ) external nonReentrant returns (bool, uint256) {
+    )
+        external
+        onlyApprovedAdapter(stable)
+        nonReentrant
+        returns (bool, uint256)
+    {
         address adapter = _novaAdapters[stable];
-        if (adapter == address(0)) {
-            revert Errors.NO_ADAPTER_APPROVED();
-        }
 
         ERC20(sDAI).safeTransferFrom(msg.sender, address(this), shares);
         ERC20(sDAI).safeApprove(adapter, shares);
