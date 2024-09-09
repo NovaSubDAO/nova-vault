@@ -1,21 +1,30 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.17;
 
-import {Errors} from "./libraries/Errors.sol";
 import {INovaVault} from "./interfaces/INovaVault.sol";
 import {INovaAdapterBase} from "./interfaces/INovaAdapterBase.sol";
-import {IERC20} from "./interfaces/IERC20.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
+import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
+import {Errors} from "./libraries/Errors.sol";
 
-contract NovaVault is INovaVault {
+contract NovaVault is INovaVault, ReentrancyGuard {
+    using SafeTransferLib for ERC20;
+
     mapping(address => address) public _novaAdapters;
     address immutable sDAI;
-    event Referral(uint16 referral, address indexed depositor, uint256 amount);
 
+    modifier isAddressZero(address asset) {
+        if (asset == address(0)) {
+            revert Errors.INVALID_ADDRESS();
+        }
+        _;
+    }
     constructor(
         address _sDAI,
         address[] memory stables,
         address[] memory novaAdapters
-    ) {
+    ) isAddressZero(_sDAI) {
         sDAI = _sDAI;
         _approveNovaAdapters(stables, novaAdapters);
     }
@@ -24,29 +33,27 @@ contract NovaVault is INovaVault {
         address[] memory stables,
         address[] memory novaAdapters
     ) internal {
-        require(
-            stables.length == novaAdapters.length,
-            Errors.MISMATCHING_ARRAYS_LENGTH
-        );
+        if (stables.length != novaAdapters.length) {
+            revert Errors.MISMATCHING_ARRAYS_LENGTH();
+        }
+
         for (uint256 i = 0; i < stables.length; i++) {
             _approveAdapter(stables[i], novaAdapters[i]);
         }
     }
 
-    function _approveAdapter(address stable, address adapter) internal {
-        require(stable != address(0), Errors.INVALID_ADDRESS);
-
-        require(
-            _novaAdapters[stable] == address(0),
-            Errors.ADAPTER_ALREADY_APPROVED
-        );
+    function _approveAdapter(
+        address stable,
+        address adapter
+    ) internal isAddressZero(stable) {
+        if (_novaAdapters[stable] != address(0)) {
+            revert Errors.ADAPTER_ALREADY_APPROVED();
+        }
 
         address underlyingAsset = INovaAdapterBase(adapter).getAsset();
-
-        require(
-            underlyingAsset == stable,
-            Errors.INVALID_STABLE_TO_ADAPTER_MAPPING
-        );
+        if (underlyingAsset != stable) {
+            revert Errors.INVALID_STABLE_TO_ADAPTER_MAPPING();
+        }
 
         _novaAdapters[stable] = adapter;
         emit AdapterApproval(stable, adapter);
@@ -56,12 +63,14 @@ contract NovaVault is INovaVault {
         address stable,
         uint256 assets,
         uint16 referral
-    ) external returns (bool, uint256) {
+    ) external nonReentrant returns (bool, uint256) {
         address adapter = _novaAdapters[stable];
-        require(adapter != address(0), Errors.NO_ADAPTER_APPROVED);
+        if (adapter == address(0)) {
+            revert Errors.NO_ADAPTER_APPROVED();
+        }
 
-        IERC20(stable).transferFrom(msg.sender, address(this), assets);
-        IERC20(stable).approve(adapter, assets);
+        ERC20(stable).safeTransferFrom(msg.sender, address(this), assets);
+        ERC20(stable).safeApprove(adapter, assets);
 
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("deposit(uint256)", assets)
@@ -72,22 +81,24 @@ contract NovaVault is INovaVault {
         );
         require(success && successDeposit, "Deposit failed");
 
-        IERC20(sDAI).transfer(msg.sender, sDaiAmount);
+        ERC20(sDAI).safeTransfer(msg.sender, sDaiAmount);
 
         emit Referral(referral, msg.sender, assets);
-
         return (true, sDaiAmount);
     }
 
     function withdraw(
         address stable,
-        uint256 shares
-    ) external returns (bool, uint256) {
+        uint256 shares,
+        uint16 referral
+    ) external nonReentrant returns (bool, uint256) {
         address adapter = _novaAdapters[stable];
-        require(adapter != address(0), Errors.NO_ADAPTER_APPROVED);
+        if (adapter == address(0)) {
+            revert Errors.NO_ADAPTER_APPROVED();
+        }
 
-        IERC20(sDAI).transferFrom(msg.sender, address(this), shares);
-        IERC20(sDAI).approve(adapter, shares);
+        ERC20(sDAI).safeTransferFrom(msg.sender, address(this), shares);
+        ERC20(sDAI).safeApprove(adapter, shares);
 
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("withdraw(uint256)", shares)
@@ -96,11 +107,11 @@ contract NovaVault is INovaVault {
             data,
             (bool, uint256)
         );
-
         require(success && successWithdraw, "Withdraw failed");
 
-        IERC20(stable).transfer(msg.sender, assetsAmount);
+        ERC20(stable).safeTransfer(msg.sender, assetsAmount);
 
+        emit Referral(referral, msg.sender, shares);
         return (true, assetsAmount);
     }
 }
