@@ -20,8 +20,28 @@ contract NovaVaultTest is Test {
     address[] stables;
     address[] novaAdapters;
     event Referral(uint16 referral, address indexed depositor, uint256 amount);
+    address public owner = address(0x1234);
+    uint256 aliceUnderlyingAmount = 100 * 1e6;
+    address alice = address(0xABCD);
 
     address public underlyingWhale = 0xacD03D601e5bB1B275Bb94076fF46ED9D753435A;
+
+    modifier transferAndApproveUnderlying() {
+        vm.prank(underlyingWhale);
+        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
+
+        vm.startPrank(alice);
+        IERC20(underlyingAddress).approve(
+            address(vault),
+            aliceUnderlyingAmount
+        );
+        assertEq(
+            IERC20(underlyingAddress).allowance(alice, address(vault)),
+            aliceUnderlyingAmount
+        );
+        vm.stopPrank();
+        _;
+    }
 
     function setUp() public {
         veloCLPoolFirst = IVelodromeCLPool(CLPOOL_1);
@@ -44,26 +64,14 @@ contract NovaVaultTest is Test {
         stables.push(underlyingAddress);
         novaAdapters.push(address(adapterCLPoolFirst));
 
+        vm.prank(owner);
         vault = new NovaVault(sDAI, stables, novaAdapters);
     }
 
-    function testNovaVaultDepositAndWithdraw() public {
-        uint256 aliceUnderlyingAmount = 100 * 1e6;
-        address alice = address(0xABCD);
-
-        vm.prank(underlyingWhale);
-        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
-
-        vm.prank(alice);
-        IERC20(underlyingAddress).approve(
-            address(vault),
-            aliceUnderlyingAmount
-        );
-        assertEq(
-            IERC20(underlyingAddress).allowance(alice, address(vault)),
-            aliceUnderlyingAmount
-        );
-
+    function testNovaVaultDepositAndWithdraw()
+        public
+        transferAndApproveUnderlying
+    {
         vm.expectEmit(address(vault));
         emit Referral(111, alice, aliceUnderlyingAmount);
 
@@ -96,10 +104,7 @@ contract NovaVaultTest is Test {
         vm.stopPrank();
     }
 
-    function testReplaceAdapter() public {
-        uint256 aliceUnderlyingAmount = 10 * 1e6;
-        address alice = address(0xABCD);
-
+    function testReplaceAdapter() public transferAndApproveUnderlying {
         IVelodromeCLPool veloCLPoolSecond = IVelodromeCLPool(CLPOOL_2);
         veloToken0 = veloCLPoolSecond.token0();
         veloToken1 = veloCLPoolSecond.token1();
@@ -117,28 +122,17 @@ contract NovaVaultTest is Test {
             CLPOOL_2
         );
 
-        vm.prank(underlyingWhale);
-        IERC20(underlyingAddress).transfer(alice, aliceUnderlyingAmount);
-
         assertEq(
             vault._novaAdapters(underlyingAddress),
             address(adapterCLPoolFirst)
         );
+
+        vm.prank(owner);
         vault.replaceAdapter(underlyingAddress, address(adapterCLPoolSecond));
 
         assertEq(
             vault._novaAdapters(underlyingAddress),
             address(adapterCLPoolSecond)
-        );
-
-        vm.prank(alice);
-        IERC20(underlyingAddress).approve(
-            address(vault),
-            aliceUnderlyingAmount
-        );
-        assertEq(
-            IERC20(underlyingAddress).allowance(alice, address(vault)),
-            aliceUnderlyingAmount
         );
 
         vm.expectEmit(address(vault));
@@ -175,5 +169,32 @@ contract NovaVaultTest is Test {
             address(adapterCLPoolSecond)
         );
         vm.stopPrank();
+    }
+
+    function testReplaceAdapterFailBecauseNotOwner() public {
+        IVelodromeCLPool veloCLPoolSecond = IVelodromeCLPool(CLPOOL_2);
+        veloToken0 = veloCLPoolSecond.token0();
+        veloToken1 = veloCLPoolSecond.token1();
+        if (veloToken0 == sDAI) {
+            underlyingAddress = veloToken1;
+        } else if (veloToken1 == sDAI) {
+            underlyingAddress = veloToken0;
+        } else {
+            revert("Velodrome pool should be made of `asset` and `sDAI`!");
+        }
+
+        NovaAdapterVeloCLPool adapterCLPoolSecond = new NovaAdapterVeloCLPool(
+            underlyingAddress,
+            sDAI,
+            CLPOOL_2
+        );
+
+        assertEq(
+            vault._novaAdapters(underlyingAddress),
+            address(adapterCLPoolFirst)
+        );
+
+        vm.expectRevert();
+        vault.replaceAdapter(underlyingAddress, address(adapterCLPoolSecond));
     }
 }
