@@ -5,6 +5,7 @@ import {Test, console} from "forge-std/Test.sol";
 import {NovaVault} from "../src/NovaVault.sol";
 import {NovaAdapterVeloCLPool} from "../src/adapters/NovaAdapterVeloCLPool.sol";
 import {IVelodromeCLPool} from "../src/interfaces/IVelodromeCLPool.sol";
+import {Errors} from "../src/libraries/Errors.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 
 contract NovaVaultTest is Test {
@@ -104,7 +105,7 @@ contract NovaVaultTest is Test {
         vm.stopPrank();
     }
 
-    function testReplaceAdapter() public transferAndApproveUnderlying {
+    function testNovaVaultReplaceAdapter() public transferAndApproveUnderlying {
         IVelodromeCLPool veloCLPoolSecond = IVelodromeCLPool(CLPOOL_2);
         veloToken0 = veloCLPoolSecond.token0();
         veloToken1 = veloCLPoolSecond.token1();
@@ -171,7 +172,7 @@ contract NovaVaultTest is Test {
         vm.stopPrank();
     }
 
-    function testReplaceAdapterFailBecauseNotOwner() public {
+    function testNovaVaultCallerIsNotTheOwner() public {
         IVelodromeCLPool veloCLPoolSecond = IVelodromeCLPool(CLPOOL_2);
         veloToken0 = veloCLPoolSecond.token0();
         veloToken1 = veloCLPoolSecond.token1();
@@ -196,5 +197,94 @@ contract NovaVaultTest is Test {
 
         vm.expectRevert();
         vault.replaceAdapter(underlyingAddress, address(adapterCLPoolSecond));
+    }
+
+    function testNovaVaultOnlyNonZero() public {
+        vm.expectRevert();
+        vm.prank(owner);
+        vault = new NovaVault(address(0), stables, novaAdapters);
+    }
+
+    function testNovaVaultOnlyApprovedAdapter()
+        public
+        transferAndApproveUnderlying
+    {
+        address nonApprovedStable = 0x84Ce89B4f6F67E523A81A82f9f2F14D84B726F6B;
+        vm.startPrank(alice);
+        vm.expectRevert(Errors.NO_ADAPTER_APPROVED.selector);
+        vault.deposit(nonApprovedStable, aliceUnderlyingAmount, 111);
+
+        vm.expectRevert(Errors.NO_ADAPTER_APPROVED.selector);
+        vault.withdraw(nonApprovedStable, aliceUnderlyingAmount, 111);
+        vm.stopPrank();
+    }
+
+    function testNovaVaultAdapterAlreadyApproved() public {
+        vm.prank(owner);
+        vm.expectRevert(Errors.ADAPTER_ALREADY_APPROVED.selector);
+        vault.replaceAdapter(underlyingAddress, address(adapterCLPoolFirst));
+    }
+
+    function testNovaVaultMismatchingArraysLength() public {
+        veloCLPoolFirst = IVelodromeCLPool(CLPOOL_1);
+        veloToken0 = veloCLPoolFirst.token0();
+        veloToken1 = veloCLPoolFirst.token1();
+        if (veloToken0 == sDAI) {
+            underlyingAddress = veloToken1;
+        } else if (veloToken1 == sDAI) {
+            underlyingAddress = veloToken0;
+        } else {
+            revert("Velodrome pool should be made of `asset` and `sDAI`!");
+        }
+
+        address secondStable = 0x84Ce89B4f6F67E523A81A82f9f2F14D84B726F6B;
+
+        adapterCLPoolFirst = new NovaAdapterVeloCLPool(
+            underlyingAddress,
+            sDAI,
+            CLPOOL_1
+        );
+
+        stables.push(underlyingAddress);
+        stables.push(secondStable);
+        novaAdapters.push(address(adapterCLPoolFirst));
+
+        vm.prank(owner);
+        vm.expectRevert(Errors.MISMATCHING_ARRAYS_LENGTH.selector);
+        vault = new NovaVault(sDAI, stables, novaAdapters);
+
+        delete stables;
+        delete novaAdapters;
+
+        stables.push(underlyingAddress);
+        novaAdapters.push(address(adapterCLPoolFirst));
+
+        vm.prank(owner);
+        vault = new NovaVault(sDAI, stables, novaAdapters);
+    }
+
+    function testNovaVaultInvalidStableToAdapterMapping() public {
+        IVelodromeCLPool veloCLPoolSecond = IVelodromeCLPool(CLPOOL_2);
+        veloToken0 = veloCLPoolSecond.token0();
+        veloToken1 = veloCLPoolSecond.token1();
+        if (veloToken0 == sDAI) {
+            underlyingAddress = veloToken1;
+        } else if (veloToken1 == sDAI) {
+            underlyingAddress = veloToken0;
+        } else {
+            revert("Velodrome pool should be made of `asset` and `sDAI`!");
+        }
+
+        NovaAdapterVeloCLPool adapterCLPoolSecond = new NovaAdapterVeloCLPool(
+            underlyingAddress,
+            sDAI,
+            CLPOOL_2
+        );
+
+        address invalidStable = 0x84Ce89B4f6F67E523A81A82f9f2F14D84B726F6B;
+
+        vm.prank(owner);
+        vm.expectRevert();
+        vault.replaceAdapter(invalidStable, address(adapterCLPoolSecond));
     }
 }
