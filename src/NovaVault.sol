@@ -53,7 +53,7 @@ contract NovaVault is INovaVault, ReentrancyGuard {
         address stable,
         address adapter
     ) internal onlyNonZero(stable) {
-        if (_novaAdapters[stable] != address(0)) {
+        if (_novaAdapters[stable] == adapter) {
             revert Errors.ADAPTER_ALREADY_APPROVED();
         }
 

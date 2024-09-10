@@ -4,17 +4,16 @@ pragma solidity 0.8.17;
 import {Test, console} from "forge-std/Test.sol";
 import {NovaVault} from "../src/NovaVault.sol";
 import {NovaAdapterVeloCLPool} from "../src/adapters/NovaAdapterVeloCLPool.sol";
-import {NovaAdapterVeloPool} from "../src/adapters/NovaAdapterVeloPool.sol";
 import {IVelodromeCLPool} from "../src/interfaces/IVelodromeCLPool.sol";
-import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 
 contract NovaVaultTest is Test {
-    address public POOL = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
+    address public CLPOOL_1 = 0x131525f3FA23d65DC2B1EB8B6483a28c43B06916;
+    address public CLPOOL_2 = 0x94c0A04C0d74571aa9EE25Dd6c29E2A36f5699aE;
     address public sDAI = 0x2218a117083f5B482B0bB821d27056Ba9c04b1D3;
-    NovaAdapterVeloCLPool public adapterCLPool;
+    NovaAdapterVeloCLPool public adapterCLPoolFirst;
     NovaVault public vault;
-    IVelodromeCLPool veloCLPool;
+    IVelodromeCLPool veloCLPoolFirst;
     address underlyingAddress;
     address private veloToken0;
     address private veloToken1;
@@ -25,9 +24,9 @@ contract NovaVaultTest is Test {
     address public underlyingWhale = 0xacD03D601e5bB1B275Bb94076fF46ED9D753435A;
 
     function setUp() public {
-        veloPool = IVelodromePool(POOL);
-        veloToken0 = veloPool.token0();
-        veloToken1 = veloPool.token1();
+        veloCLPoolFirst = IVelodromeCLPool(CLPOOL_1);
+        veloToken0 = veloCLPoolFirst.token0();
+        veloToken1 = veloCLPoolFirst.token1();
         if (veloToken0 == sDAI) {
             underlyingAddress = veloToken1;
         } else if (veloToken1 == sDAI) {
@@ -36,14 +35,14 @@ contract NovaVaultTest is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        adapterCLPool = new NovaAdapterVeloCLPool(
+        adapterCLPoolFirst = new NovaAdapterVeloCLPool(
             underlyingAddress,
             sDAI,
-            POOL
+            CLPOOL_1
         );
 
         stables.push(underlyingAddress);
-        novaAdapters.push(address(adapterCLPool));
+        novaAdapters.push(address(adapterCLPoolFirst));
 
         vault = new NovaVault(sDAI, stables, novaAdapters);
     }
@@ -101,9 +100,9 @@ contract NovaVaultTest is Test {
         uint256 aliceUnderlyingAmount = 10 * 1e6;
         address alice = address(0xABCD);
 
-        IVelodromePool veloPool = IVelodromePool(POOL);
-        veloToken0 = veloPool.token0();
-        veloToken1 = veloPool.token1();
+        IVelodromeCLPool veloCLPoolSecond = IVelodromeCLPool(CLPOOL_2);
+        veloToken0 = veloCLPoolSecond.token0();
+        veloToken1 = veloCLPoolSecond.token1();
         if (veloToken0 == sDAI) {
             underlyingAddress = veloToken1;
         } else if (veloToken1 == sDAI) {
@@ -112,10 +111,10 @@ contract NovaVaultTest is Test {
             revert("Velodrome pool should be made of `asset` and `sDAI`!");
         }
 
-        NovaAdapterVeloPool adapterPool = new NovaAdapterVeloPool(
+        NovaAdapterVeloCLPool adapterCLPoolSecond = new NovaAdapterVeloCLPool(
             underlyingAddress,
             sDAI,
-            POOL
+            CLPOOL_2
         );
 
         vm.prank(underlyingWhale);
@@ -123,10 +122,14 @@ contract NovaVaultTest is Test {
 
         assertEq(
             vault._novaAdapters(underlyingAddress),
-            address(adapterCLPool)
+            address(adapterCLPoolFirst)
         );
-        vault.replaceAdapter(underlyingAddress, address(adapterPool));
-        assertEq(vault._novaAdapters(underlyingAddress), address(adapterPool));
+        vault.replaceAdapter(underlyingAddress, address(adapterCLPoolSecond));
+
+        assertEq(
+            vault._novaAdapters(underlyingAddress),
+            address(adapterCLPoolSecond)
+        );
 
         vm.prank(alice);
         IERC20(underlyingAddress).approve(
@@ -167,6 +170,10 @@ contract NovaVaultTest is Test {
         assertEq(IERC20(sDAI).allowance(alice, address(vault)), 0);
         assertEq(IERC20(sDAI).balanceOf(alice), 0);
         assertEq(IERC20(underlyingAddress).balanceOf(alice), assetsAmount);
+        assertEq(
+            vault._novaAdapters(underlyingAddress),
+            address(adapterCLPoolSecond)
+        );
         vm.stopPrank();
     }
 }

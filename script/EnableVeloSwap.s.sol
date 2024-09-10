@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0
-pragma solidity ^0.8.13;
+pragma solidity 0.8.17;
 
 import "forge-std/Script.sol";
 import {NovaVaultV2} from "../src/NovaVaultV2.sol";
-import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
+import {IVelodromeCLPool} from "../src/interfaces/IVelodromeCLPool.sol";
 
 contract EnableVeloSwap is Script {
     function run() external {
@@ -11,8 +11,12 @@ contract EnableVeloSwap is Script {
 
         vm.startBroadcast(privateKey);
 
-        NovaVaultV2 vaultV2 = NovaVaultV2(0x04b12a2590BD808F7aC01f066aae0e2f48A3991C);
-        IVelodromePool veloPool = IVelodromePool(0x131525f3FA23d65DC2B1EB8B6483a28c43B06916);
+        NovaVaultV2 vaultV2 = NovaVaultV2(
+            0x04b12a2590BD808F7aC01f066aae0e2f48A3991C
+        );
+        IVelodromeCLPool veloPool = IVelodromeCLPool(
+            0x131525f3FA23d65DC2B1EB8B6483a28c43B06916
+        );
 
         //////////////////
         // NovaVaultV2 Setup
