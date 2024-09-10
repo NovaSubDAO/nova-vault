@@ -2,10 +2,13 @@
 pragma solidity ^0.8.13;
 
 import {IVelodromeCLPool} from "../interfaces/IVelodromeCLPool.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
 import {NovaAdapterBase} from "../NovaAdapterBase.sol";
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
 contract NovaAdapterVeloCLPool is NovaAdapterBase {
+    using SafeTransferLib for ERC20;
+
     bool private isStableFirst;
     address immutable veloToken0;
     address immutable veloToken1;
@@ -38,10 +41,10 @@ contract NovaAdapterVeloCLPool is NovaAdapterBase {
         require(msg.sender == address(veloPool), "Caller is not VelodromePool");
 
         if (amount0Delta > 0) {
-            IERC20(veloToken0).transfer(msg.sender, uint256(amount0Delta));
+            ERC20(veloToken0).safeTransfer(msg.sender, uint256(amount0Delta));
         }
         if (amount1Delta > 0) {
-            IERC20(veloToken1).transfer(msg.sender, uint256(amount1Delta));
+            ERC20(veloToken1).safeTransfer(msg.sender, uint256(amount1Delta));
         }
     }
 
