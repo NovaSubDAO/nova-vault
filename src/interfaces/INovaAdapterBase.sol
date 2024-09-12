@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 interface INovaAdapterBase {
-    function getAsset() external view returns (address);
-    function deposit(uint256 assets) external returns (bool, uint256);
+    function getStable() external view returns (address);
+    function deposit(uint256 stable) external returns (bool, uint256);
     function withdraw(uint256 shares) external returns (bool, uint256);
 }

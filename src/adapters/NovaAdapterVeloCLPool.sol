@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.13;
+pragma solidity 0.8.17;
 
 import {IVelodromeCLPool} from "../interfaces/IVelodromeCLPool.sol";
 import {NovaAdapterBase} from "../NovaAdapterBase.sol";
@@ -16,20 +16,20 @@ contract NovaAdapterVeloCLPool is NovaAdapterBase {
     IVelodromeCLPool immutable veloPool;
 
     constructor(
-        address _asset,
-        address _sDAI,
+        address _stable,
+        address _savings,
         address _pool
-    ) NovaAdapterBase(_asset, _sDAI) {
+    ) NovaAdapterBase(_stable, _savings) {
         veloPool = IVelodromeCLPool(_pool);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
-        if ((veloToken0 == asset) && (veloToken1 == sDAI)) {
+        if ((veloToken0 == stable) && (veloToken1 == savings)) {
             isStableFirst = true;
-        } else if ((veloToken0 == sDAI) && (veloToken1 == asset)) {
+        } else if ((veloToken0 == savings) && (veloToken1 == stable)) {
             isStableFirst = false;
         } else {
-            revert("Velodrome pool should be made of `_asset` and `sDAI`!");
+            revert("Velodrome pool should be made of `_stable` and `savings`!");
         }
     }
 
@@ -50,15 +50,15 @@ contract NovaAdapterVeloCLPool is NovaAdapterBase {
 
     function _swap(
         int256 amount,
-        bool fromStableTosDai
+        bool fromStableToSavings
     ) internal override returns (int256, int256) {
         (uint160 sqrtPriceX96, , , , , ) = veloPool.slot0();
-        uint160 num = fromStableTosDai ? 95 : 105;
+        uint160 num = fromStableToSavings ? 95 : 105;
         int256 sign = isStableFirst ? int256(1) : int256(-1);
 
         (int256 amount0, int256 amount1) = veloPool.swap(
             address(this),
-            fromStableTosDai,
+            fromStableToSavings,
             sign * amount,
             (num * sqrtPriceX96) / 100,
             ""
@@ -67,7 +67,7 @@ contract NovaAdapterVeloCLPool is NovaAdapterBase {
         return (amount0, amount1);
     }
 
-    function getAsset() external view returns (address) {
-        return asset;
+    function getStable() external view returns (address) {
+        return stable;
     }
 }
