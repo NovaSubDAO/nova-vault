@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.17;
+pragma solidity ^0.8.13;
 
-import {IVelodromePool} from "./interfaces/IVelodromePool.sol";
+import {IVelodromeCLPool} from "../interfaces/IVelodromeCLPool.sol";
+import {NovaAdapterBase} from "../NovaAdapterBase.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {NovaAdapterBase} from "./NovaAdapterBase.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
-contract NovaAdapterVelo is NovaAdapterBase {
+contract NovaAdapterVeloCLPool is NovaAdapterBase {
     using SafeTransferLib for ERC20;
 
     bool private isStableFirst;
     address immutable veloToken0;
     address immutable veloToken1;
 
-    IVelodromePool public immutable veloPool;
+    IVelodromeCLPool immutable veloPool;
 
     constructor(
         address _asset,
         address _sDAI,
         address _pool
     ) NovaAdapterBase(_asset, _sDAI) {
-        veloPool = IVelodromePool(_pool);
+        veloPool = IVelodromeCLPool(_pool);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 

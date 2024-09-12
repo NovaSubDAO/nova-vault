@@ -6,9 +6,10 @@ import {INovaAdapterBase} from "./interfaces/INovaAdapterBase.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {ReentrancyGuard} from "@solmate/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Errors} from "./libraries/Errors.sol";
 
-contract NovaVault is INovaVault, ReentrancyGuard {
+contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
     using SafeTransferLib for ERC20;
 
     mapping(address => address) public _novaAdapters;
@@ -31,7 +32,7 @@ contract NovaVault is INovaVault, ReentrancyGuard {
         address _sDAI,
         address[] memory stables,
         address[] memory novaAdapters
-    ) onlyNonZero(_sDAI) {
+    ) Ownable() onlyNonZero(_sDAI) {
         sDAI = _sDAI;
         _approveNovaAdapters(stables, novaAdapters);
     }
@@ -53,7 +54,7 @@ contract NovaVault is INovaVault, ReentrancyGuard {
         address stable,
         address adapter
     ) internal onlyNonZero(stable) {
-        if (_novaAdapters[stable] != address(0)) {
+        if (_novaAdapters[stable] == adapter) {
             revert Errors.ADAPTER_ALREADY_APPROVED();
         }
 
@@ -64,6 +65,13 @@ contract NovaVault is INovaVault, ReentrancyGuard {
 
         _novaAdapters[stable] = adapter;
         emit AdapterApproval(stable, adapter);
+    }
+
+    function replaceAdapter(
+        address stable,
+        address adapter
+    ) external onlyOwner {
+        _approveAdapter(stable, adapter);
     }
 
     function deposit(

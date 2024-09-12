@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Test, console} from "forge-std/Test.sol";
 import {NovaVaultV2} from "../src/NovaVaultV2.sol";
-import {IVelodromePool} from "../src/interfaces/IVelodromePool.sol";
+import {IVelodromeCLPool} from "../src/interfaces/IVelodromeCLPool.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {LibSwap} from "@lifi/src/Libraries/LibSwap.sol";
 import {GenericSwapFacetV3} from "@lifi/src/Facets/GenericSwapFacetV3.sol";
@@ -17,8 +17,8 @@ contract NovaVaultV2Test is Test {
     address public usdc = 0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85;
     NovaVaultV2 public vault;
     GenericSwapFacetV3 public swapFacet;
-    IVelodromePool veloPool;
-    IVelodromePool veloPool_2;
+    IVelodromeCLPool veloPool;
+    IVelodromeCLPool veloPool_2;
     address private veloToken0;
     address private veloToken1;
     address underlyingAddress;
@@ -47,7 +47,7 @@ contract NovaVaultV2Test is Test {
     }
 
     function setUp() public {
-        veloPool = IVelodromePool(veloPoolUsdcSDai);
+        veloPool = IVelodromeCLPool(veloPoolUsdcSDai);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
@@ -297,7 +297,7 @@ contract NovaVaultV2Test is Test {
         public
         transferAndApproveUnderlying
     {
-        veloPool_2 = IVelodromePool(veloPoolUsdcUsdt);
+        veloPool_2 = IVelodromeCLPool(veloPoolUsdcUsdt);
 
         veloToken0 = veloPool_2.token0();
         veloToken1 = veloPool_2.token1();
@@ -346,7 +346,7 @@ contract NovaVaultV2Test is Test {
     }
 
     function testShouldFailBecauseCallerIsNotOwner() public {
-        veloPool_2 = IVelodromePool(veloPoolUsdcUsdt);
+        veloPool_2 = IVelodromeCLPool(veloPoolUsdcUsdt);
 
         veloToken0 = veloPool_2.token0();
         veloToken1 = veloPool_2.token1();

@@ -36,7 +36,7 @@ jobs:
       - name: Run NovaVault tests
         run: |
           forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER --match-path test/NovaVault.t.sol
-          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER --match-path test/NovaAdapterVelo.t.sol
+          forge test --fork-url optimism -vvv --fork-block-number $FORK_BLOCK_NUMBER --match-path test/NovaAdapterVeloCLPool.t.sol
         id: test-v1
 
       - name: Run NovaVaultV2 tests
