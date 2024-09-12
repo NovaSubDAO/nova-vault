@@ -8,26 +8,26 @@ import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 abstract contract NovaAdapterBase is INovaAdapterBase {
     using SafeTransferLib for ERC20;
 
-    address immutable sDAI;
+    address immutable savings;
     address immutable asset;
 
-    constructor(address _asset, address _sDAI) {
+    constructor(address _asset, address _savings) {
         asset = _asset;
-        sDAI = _sDAI;
+        savings = _savings;
     }
 
     function deposit(uint256 assets) external returns (bool, uint256) {
         ERC20(asset).safeTransferFrom(msg.sender, address(this), assets);
 
-        (, int256 sDaiOut) = _swap(int256(assets), true);
-        uint256 sDaiToTransfer = uint256(-sDaiOut);
-        ERC20(sDAI).safeTransfer(msg.sender, sDaiToTransfer);
+        (, int256 savingsOut) = _swap(int256(assets), true);
+        uint256 savingsToTransfer = uint256(-savingsOut);
+        ERC20(savings).safeTransfer(msg.sender, savingsToTransfer);
 
-        return (true, sDaiToTransfer);
+        return (true, savingsToTransfer);
     }
 
     function withdraw(uint256 shares) external returns (bool, uint256) {
-        ERC20(sDAI).safeTransferFrom(msg.sender, address(this), shares);
+        ERC20(savings).safeTransferFrom(msg.sender, address(this), shares);
 
         (int256 assets, ) = _swap(int256(shares), false);
         uint256 assetsToTransfer = uint256(-assets);
@@ -37,17 +37,17 @@ abstract contract NovaAdapterBase is INovaAdapterBase {
     }
 
     /**
-     * @notice Performs a swap operation between the stable asset and sDAI.
+     * @notice Performs a swap operation between the stable asset and savings.
      * @dev This function interacts with the pool to execute the swap.
      * @param amount The amount to be swapped.
-     * @param fromStableTosDai A boolean indicating the direction of the swap.
-     *                         - `true` for swapping from the stable asset to sDAI.
-     *                         - `false` for swapping from sDAI to the stable asset.
+     * @param fromStableToSavings A boolean indicating the direction of the swap.
+     *                         - `true` for swapping from the stable asset to savings.
+     *                         - `false` for swapping from savings to the stable asset.
      * @return amount0 The amount of token0 involved in the swap.
      * @return amount1 The amount of token1 involved in the swap.
      */
     function _swap(
         int256 amount,
-        bool fromStableTosDai
+        bool fromStableToSavings
     ) internal virtual returns (int256, int256);
 }

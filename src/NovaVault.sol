@@ -13,7 +13,7 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
     using SafeTransferLib for ERC20;
 
     mapping(address => address) public _novaAdapters;
-    address immutable sDAI;
+    address immutable savings;
 
     modifier onlyNonZero(address asset) {
         if (asset == address(0)) {
@@ -29,11 +29,11 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
         _;
     }
     constructor(
-        address _sDAI,
+        address _savings,
         address[] memory stables,
         address[] memory novaAdapters
-    ) Ownable() onlyNonZero(_sDAI) {
-        sDAI = _sDAI;
+    ) Ownable() onlyNonZero(_savings) {
+        savings = _savings;
         _approveNovaAdapters(stables, novaAdapters);
     }
 
@@ -92,16 +92,16 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("deposit(uint256)", assets)
         );
-        (bool successDeposit, uint256 sDaiAmount) = abi.decode(
+        (bool successDeposit, uint256 savingsAmount) = abi.decode(
             data,
             (bool, uint256)
         );
         require(success && successDeposit, "Deposit failed");
 
-        ERC20(sDAI).safeTransfer(msg.sender, sDaiAmount);
+        ERC20(savings).safeTransfer(msg.sender, savingsAmount);
 
         emit Referral(referral, msg.sender, assets);
-        return (true, sDaiAmount);
+        return (true, savingsAmount);
     }
 
     function withdraw(
@@ -116,8 +116,8 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
     {
         address adapter = _novaAdapters[stable];
 
-        ERC20(sDAI).safeTransferFrom(msg.sender, address(this), shares);
-        ERC20(sDAI).safeApprove(adapter, shares);
+        ERC20(savings).safeTransferFrom(msg.sender, address(this), shares);
+        ERC20(savings).safeApprove(adapter, shares);
 
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("withdraw(uint256)", shares)
