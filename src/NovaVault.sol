@@ -15,8 +15,8 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
     mapping(address => address) public _novaAdapters;
     address immutable savings;
 
-    modifier onlyNonZero(address asset) {
-        if (asset == address(0)) {
+    modifier onlyNonZero(address stable) {
+        if (stable == address(0)) {
             revert Errors.INVALID_ADDRESS();
         }
         _;
@@ -58,7 +58,7 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
             revert Errors.ADAPTER_ALREADY_APPROVED();
         }
 
-        address underlyingAsset = INovaAdapterBase(adapter).getAsset();
+        address underlyingAsset = INovaAdapterBase(adapter).getStable();
         if (underlyingAsset != stable) {
             revert Errors.INVALID_STABLE_TO_ADAPTER_MAPPING();
         }
@@ -76,7 +76,7 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
 
     function deposit(
         address stable,
-        uint256 assets,
+        uint256 amounInStable,
         uint16 referral
     )
         external
@@ -86,11 +86,15 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
     {
         address adapter = _novaAdapters[stable];
 
-        ERC20(stable).safeTransferFrom(msg.sender, address(this), assets);
-        ERC20(stable).safeApprove(adapter, assets);
+        ERC20(stable).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amounInStable
+        );
+        ERC20(stable).safeApprove(adapter, amounInStable);
 
         (bool success, bytes memory data) = adapter.call(
-            abi.encodeWithSignature("deposit(uint256)", assets)
+            abi.encodeWithSignature("deposit(uint256)", amounInStable)
         );
         (bool successDeposit, uint256 savingsAmount) = abi.decode(
             data,
@@ -100,7 +104,7 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
 
         ERC20(savings).safeTransfer(msg.sender, savingsAmount);
 
-        emit Referral(referral, msg.sender, assets);
+        emit Referral(referral, msg.sender, amounInStable);
         return (true, savingsAmount);
     }
 
@@ -122,15 +126,15 @@ contract NovaVault is INovaVault, Ownable, ReentrancyGuard {
         (bool success, bytes memory data) = adapter.call(
             abi.encodeWithSignature("withdraw(uint256)", shares)
         );
-        (bool successWithdraw, uint256 assetsAmount) = abi.decode(
+        (bool successWithdraw, uint256 amountOutStable) = abi.decode(
             data,
             (bool, uint256)
         );
         require(success && successWithdraw, "Withdraw failed");
 
-        ERC20(stable).safeTransfer(msg.sender, assetsAmount);
+        ERC20(stable).safeTransfer(msg.sender, amountOutStable);
 
         emit Referral(referral, msg.sender, shares);
-        return (true, assetsAmount);
+        return (true, amountOutStable);
     }
 }

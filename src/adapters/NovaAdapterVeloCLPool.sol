@@ -16,20 +16,20 @@ contract NovaAdapterVeloCLPool is NovaAdapterBase {
     IVelodromeCLPool immutable veloPool;
 
     constructor(
-        address _asset,
+        address _stable,
         address _savings,
         address _pool
-    ) NovaAdapterBase(_asset, _savings) {
+    ) NovaAdapterBase(_stable, _savings) {
         veloPool = IVelodromeCLPool(_pool);
         veloToken0 = veloPool.token0();
         veloToken1 = veloPool.token1();
 
-        if ((veloToken0 == asset) && (veloToken1 == savings)) {
+        if ((veloToken0 == stable) && (veloToken1 == savings)) {
             isStableFirst = true;
-        } else if ((veloToken0 == savings) && (veloToken1 == asset)) {
+        } else if ((veloToken0 == savings) && (veloToken1 == stable)) {
             isStableFirst = false;
         } else {
-            revert("Velodrome pool should be made of `_asset` and `savings`!");
+            revert("Velodrome pool should be made of `_stable` and `savings`!");
         }
     }
 
@@ -67,7 +67,7 @@ contract NovaAdapterVeloCLPool is NovaAdapterBase {
         return (amount0, amount1);
     }
 
-    function getAsset() external view returns (address) {
-        return asset;
+    function getStable() external view returns (address) {
+        return stable;
     }
 }
