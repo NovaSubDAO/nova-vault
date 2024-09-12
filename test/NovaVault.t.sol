@@ -252,15 +252,6 @@ contract NovaVaultTest is Test {
         vm.prank(owner);
         vm.expectRevert(Errors.MISMATCHING_ARRAYS_LENGTH.selector);
         vault = new NovaVault(sDAI, stables, novaAdapters);
-
-        delete stables;
-        delete novaAdapters;
-
-        stables.push(underlyingAddress);
-        novaAdapters.push(address(adapterCLPoolFirst));
-
-        vm.prank(owner);
-        vault = new NovaVault(sDAI, stables, novaAdapters);
     }
 
     function testNovaVaultInvalidStableToAdapterMapping() public {

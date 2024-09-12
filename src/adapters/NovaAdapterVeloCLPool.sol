@@ -13,7 +13,7 @@ contract NovaAdapterVeloCLPool is NovaAdapterBase {
     address immutable veloToken0;
     address immutable veloToken1;
 
-    IVelodromeCLPool public veloPool;
+    IVelodromeCLPool immutable veloPool;
 
     constructor(
         address _asset,

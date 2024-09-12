@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.17;
 
+import {INovaAdapterBase} from "./interfaces/INovaAdapterBase.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
-abstract contract NovaAdapterBase {
+abstract contract NovaAdapterBase is INovaAdapterBase {
     using SafeTransferLib for ERC20;
 
     address immutable sDAI;
